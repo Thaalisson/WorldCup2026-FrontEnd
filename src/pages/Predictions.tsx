@@ -53,35 +53,32 @@ export function Predictions({ poolId }: Props) {
     setSaving(true);
     if (saveMsgTimer.current) clearTimeout(saveMsgTimer.current);
 
-    const results = await Promise.allSettled(
-      saveable.map(m => {
-        const sc = scores[m.id] ?? { home: 0, away: 0 };
-        return apiPost('/predictions', {
-          poolId,
-          matchId: m.id,
-          homeScorePrediction: sc.home,
-          awayScorePrediction: sc.away,
-        }).then(() => m.id);
-      })
-    );
+    try {
+      const payload = {
+        poolId,
+        predictions: saveable.map(m => {
+          const sc = scores[m.id] ?? { home: 0, away: 0 };
+          return { matchId: m.id, homeScorePrediction: sc.home, awayScorePrediction: sc.away };
+        }),
+      };
 
-    const succeeded = results
-      .filter((r): r is PromiseFulfilledResult<string> => r.status === 'fulfilled')
-      .map(r => r.value);
-    const failed = results.filter((r): r is PromiseRejectedResult => r.status === 'rejected');
-    failed.forEach((r, i) => console.error(`Palpite ${i + 1} falhou:`, r.reason));
-    const failedCount = failed.length;
+      const result = await apiPost<{ saved: number; skipped: number }>('/predictions/bulk', payload);
 
-    setSavedIds(prev => new Set([...prev, ...succeeded]));
-    setDirtyIds(new Set());
-    setSaving(false);
+      setSavedIds(prev => new Set([...prev, ...saveable.map(m => m.id)]));
+      setDirtyIds(new Set());
 
-    if (failedCount === 0) {
-      setSaveMsg({ type: 'success', text: `${succeeded.length} palpite${succeeded.length !== 1 ? 's' : ''} salvo${succeeded.length !== 1 ? 's' : ''} com sucesso!` });
-    } else {
-      setSaveMsg({ type: 'error', text: `${succeeded.length} salvos, ${failedCount} falharam.` });
+      if (result.skipped === 0) {
+        setSaveMsg({ type: 'success', text: `${result.saved} palpite${result.saved !== 1 ? 's' : ''} salvo${result.saved !== 1 ? 's' : ''} com sucesso!` });
+      } else {
+        setSaveMsg({ type: 'error', text: `${result.saved} salvos, ${result.skipped} bloqueados (jogo já iniciado).` });
+      }
+    } catch (err) {
+      console.error('Erro ao salvar palpites:', err);
+      setSaveMsg({ type: 'error', text: 'Erro ao salvar. Tente novamente.' });
+    } finally {
+      setSaving(false);
+      saveMsgTimer.current = setTimeout(() => setSaveMsg(null), 4000);
     }
-    saveMsgTimer.current = setTimeout(() => setSaveMsg(null), 4000);
   }
 
   const realMatches = matches.filter(m => m.homeTeam.name !== 'A Definir');
