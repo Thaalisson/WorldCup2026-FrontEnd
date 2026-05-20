@@ -68,7 +68,9 @@ export function Predictions({ poolId }: Props) {
     const succeeded = results
       .filter((r): r is PromiseFulfilledResult<string> => r.status === 'fulfilled')
       .map(r => r.value);
-    const failedCount = results.filter(r => r.status === 'rejected').length;
+    const failed = results.filter((r): r is PromiseRejectedResult => r.status === 'rejected');
+    failed.forEach((r, i) => console.error(`Palpite ${i + 1} falhou:`, r.reason));
+    const failedCount = failed.length;
 
     setSavedIds(prev => new Set([...prev, ...succeeded]));
     setDirtyIds(new Set());

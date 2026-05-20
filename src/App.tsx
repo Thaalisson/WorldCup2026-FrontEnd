@@ -182,6 +182,7 @@ function MainApp() {
           )}
 
           <button
+            className="header-pool-btns"
             onClick={() => { setShowCreatePool(v => !v); setShowJoinPool(false); setPoolMsg(''); }}
             style={{ background: 'none', border: '1px solid #E5E7EB', color: '#6B7280', borderRadius: 7, padding: '5px 10px', fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, transition: 'border-color 0.15s, color 0.15s' }}
             onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = '#F97316'; (e.currentTarget as HTMLButtonElement).style.color = '#F97316'; }}
@@ -190,6 +191,7 @@ function MainApp() {
             <Plus style={{ width: 12, height: 12 }} /> Criar
           </button>
           <button
+            className="header-pool-btns"
             onClick={() => { setShowJoinPool(v => !v); setShowCreatePool(false); setPoolMsg(''); }}
             style={{ background: 'none', border: '1px solid #E5E7EB', color: '#6B7280', borderRadius: 7, padding: '5px 10px', fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, transition: 'border-color 0.15s, color 0.15s' }}
             onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = '#6B7280'; (e.currentTarget as HTMLButtonElement).style.color = '#111827'; }}
@@ -284,6 +286,15 @@ function MainApp() {
               <Shield size={13} /> ADMIN
             </button>
           )}
+          <div style={{ height: 1, background: '#E5E7EB', margin: '4px 16px' }} />
+          <button onClick={() => { setShowCreatePool(v => !v); setShowJoinPool(false); setPoolMsg(''); setMobileNavOpen(false); }}
+            style={{ padding: '12px 24px', background: 'none', border: 'none', textAlign: 'left', color: '#6B7280', fontSize: 13, fontWeight: 700, cursor: 'pointer', letterSpacing: '0.08em', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Plus size={13} /> CRIAR BOLÃO
+          </button>
+          <button onClick={() => { setShowJoinPool(v => !v); setShowCreatePool(false); setPoolMsg(''); setMobileNavOpen(false); }}
+            style={{ padding: '12px 24px', background: 'none', border: 'none', textAlign: 'left', color: '#6B7280', fontSize: 13, fontWeight: 700, cursor: 'pointer', letterSpacing: '0.08em', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Hash size={13} /> ENTRAR COM CÓDIGO
+          </button>
         </div>
       )}
 
@@ -291,7 +302,7 @@ function MainApp() {
       {(showCreatePool || showJoinPool) && (
         <div style={{ background: '#FFFFFF', borderBottom: '1px solid #E5E7EB', padding: '10px 24px' }}>
           {showCreatePool && (
-            <form onSubmit={handleCreatePool} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <form onSubmit={handleCreatePool} className="pool-form" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <input placeholder="Nome do bolão" value={poolName} onChange={e => setPoolName(e.target.value)} required className="input-field" style={{ maxWidth: 260, padding: '8px 12px', fontSize: 13 }} />
               <button type="submit" className="btn-primary" style={{ width: 'auto', padding: '8px 20px', fontSize: 13 }}>Criar</button>
               <button type="button" onClick={() => setShowCreatePool(false)} style={{ background: 'none', border: 'none', color: '#6B7280', cursor: 'pointer', padding: 4 }}><X style={{ width: 16, height: 16 }} /></button>
@@ -299,7 +310,7 @@ function MainApp() {
             </form>
           )}
           {showJoinPool && (
-            <form onSubmit={handleJoinPool} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <form onSubmit={handleJoinPool} className="pool-form" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <input placeholder="Código de convite (ex: A3F7B2C1)" value={inviteCode} onChange={e => setInviteCode(e.target.value.toUpperCase())} required className="input-field" style={{ maxWidth: 280, padding: '8px 12px', fontSize: 13, fontFamily: 'monospace', letterSpacing: '0.15em' }} />
               <button type="submit" className="btn-primary" style={{ width: 'auto', padding: '8px 20px', fontSize: 13 }}>Entrar</button>
               <button type="button" onClick={() => setShowJoinPool(false)} style={{ background: 'none', border: 'none', color: '#6B7280', cursor: 'pointer', padding: 4 }}><X style={{ width: 16, height: 16 }} /></button>
@@ -503,7 +514,7 @@ function WelcomeScreen({ onCreatePool, onJoinPool }: { onCreatePool: () => void;
       </div>
 
       {/* Options */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+      <div className="welcome-grid">
         <button
           onClick={onCreatePool}
           style={{

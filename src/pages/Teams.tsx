@@ -57,7 +57,7 @@ export function Teams() {
             {groups.length} grupos · {teams.length} seleções classificadas
           </p>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           {['A','B','C','D','E','F','G','H','I','J','K','L'].map(g => (
             <a
               key={g}

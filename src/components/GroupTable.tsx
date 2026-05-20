@@ -11,6 +11,7 @@ export function GroupTable({ groupName, teams }: Props) {
       <p style={{ margin: '0 0 14px', fontSize: 11, fontWeight: 800, color: '#F97316', textTransform: 'uppercase', letterSpacing: '0.14em' }}>
         Grupo {groupName}
       </p>
+      <div className="table-scroll">
       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
         <thead>
           <tr>
@@ -54,6 +55,7 @@ export function GroupTable({ groupName, teams }: Props) {
           ))}
         </tbody>
       </table>
+      </div>
       <p style={{ margin: '10px 0 0', fontSize: 10, color: '#6B728060' }}>
         Top 2 avançam para as oitavas de final.
       </p>

@@ -35,7 +35,7 @@ export function Groups() {
       ) : groups.length === 0 ? (
         <p style={{ color: '#6B7280', fontSize: 14 }}>Nenhum jogo finalizado ainda.</p>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(420px, 1fr))', gap: 16 }}>
+        <div className="groups-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 420px), 1fr))', gap: 16 }}>
           {groups.map(g => (
             <GroupTable key={g} groupName={g} teams={standings[g]} />
           ))}

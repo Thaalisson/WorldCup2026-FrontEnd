@@ -15,7 +15,8 @@ export function RankingTable({ items }: Props) {
 
   return (
     <div className="card" style={{ overflow: 'hidden' }}>
-      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+      <div className="table-scroll">
+      <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 420 }}>
         <thead>
           <tr style={{ borderBottom: '1px solid #E5E7EB' }}>
             {['#', 'JOGADOR', 'PONTOS', 'EXATOS', 'RESULTADOS'].map((h, i) => (
@@ -75,6 +76,7 @@ export function RankingTable({ items }: Props) {
           ))}
         </tbody>
       </table>
+      </div>
     </div>
   );
 }

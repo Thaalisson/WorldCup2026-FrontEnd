@@ -105,7 +105,7 @@ export function GroupPredictions({ poolId }: Props) {
           <div className="spinner" style={{ width: 18, height: 18 }} /> Carregando grupos...
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 16 }}>
+        <div className="group-predictions-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 320px), 1fr))', gap: 16 }}>
           {groups.map(group => {
             const groupTeams = teamsByGroup[group] ?? [];
             const pick = getPick(group);

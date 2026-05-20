@@ -32,7 +32,10 @@ export async function apiPost<T>(path: string, body: unknown): Promise<T> {
     headers: authHeaders(),
     body: JSON.stringify(body)
   });
-  if (!response.ok) throw new Error(`${response.status} POST ${path}`);
+  if (!response.ok) {
+    const text = await response.text().catch(() => '');
+    throw new Error(`${response.status} POST ${path}: ${text}`);
+  }
   return response.json();
 }
 

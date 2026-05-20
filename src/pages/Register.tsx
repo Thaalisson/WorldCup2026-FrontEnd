@@ -49,7 +49,7 @@ export function Register({ onGoToLogin }: Props) {
           background: '#FFFFFF',
           border: '1px solid #E5E7EB',
           borderRadius: 20,
-          padding: '40px 36px',
+          padding: 'clamp(24px, 6vw, 40px) clamp(20px, 5vw, 36px)',
           textAlign: 'center',
         }}>
           <div style={{
