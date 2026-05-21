@@ -1,6 +1,24 @@
-﻿import type { Match } from '../types';
+﻿import { useEffect, useState } from 'react';
+import type { Match } from '../types';
 import { formatBrazilDate, formatBrazilTime, isMatchLocked } from '../utils/timezone';
-import { Lock, CheckCircle } from 'lucide-react';
+import { Lock, CheckCircle, Clock } from 'lucide-react';
+
+function useCountdown(kickoffAt: string) {
+  function calc() {
+    const diff = new Date(kickoffAt.endsWith('Z') ? kickoffAt : kickoffAt + 'Z').getTime() - Date.now();
+    if (diff <= 0) return null;
+    const d = Math.floor(diff / 86400000);
+    const h = Math.floor((diff % 86400000) / 3600000);
+    const m = Math.floor((diff % 3600000) / 60000);
+    return { d, h, m, urgent: diff < 7200000 }; // urgent < 2h
+  }
+  const [t, setT] = useState(calc);
+  useEffect(() => {
+    const id = setInterval(() => setT(calc()), 30000);
+    return () => clearInterval(id);
+  }, [kickoffAt]);
+  return t;
+}
 
 type Props = {
   match: Match;
@@ -9,6 +27,7 @@ type Props = {
   isSaved: boolean;
   isDirty: boolean;
   onChange: (home: number, away: number) => void;
+  onBlur?: () => void;
 };
 
 function FlagImg({ isoCode, name }: { isoCode?: string; name: string }) {
@@ -25,11 +44,12 @@ function FlagImg({ isoCode, name }: { isoCode?: string; name: string }) {
   );
 }
 
-export function MatchCard({ match, home, away, isSaved, isDirty, onChange }: Props) {
+export function MatchCard({ match, home, away, isSaved, isDirty, onChange, onBlur }: Props) {
   const locked = match.isFinished || isMatchLocked(match.kickoffAt);
   const stageLabel = match.groupName ? `GRUPO ${match.groupName}` : match.stage?.toUpperCase();
   const dateStr = formatBrazilDate(match.kickoffAt);
   const timeStr = formatBrazilTime(match.kickoffAt);
+  const countdown = useCountdown(match.kickoffAt);
 
   const inputStyle: React.CSSProperties = {
     width: 38, height: 38,
@@ -59,7 +79,7 @@ export function MatchCard({ match, home, away, isSaved, isDirty, onChange }: Pro
       }}
     >
       {/* Stage + time */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 4 }}>
         <span style={{
           fontSize: 9, fontWeight: 800, letterSpacing: '0.12em',
           padding: '3px 8px', borderRadius: 20,
@@ -68,9 +88,19 @@ export function MatchCard({ match, home, away, isSaved, isDirty, onChange }: Pro
         }}>
           {stageLabel}
         </span>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
           {savedIndicator && <CheckCircle size={12} color="#22C55E" />}
           <span style={{ fontSize: 10, color: '#6B7280' }}>{dateStr} · {timeStr}</span>
+          {!locked && !match.isFinished && countdown && (
+            <span className={`countdown-chip ${countdown.urgent ? 'urgent' : 'normal'}`}>
+              <Clock size={8} />
+              {countdown.d > 0
+                ? `${countdown.d}d ${countdown.h}h`
+                : countdown.h > 0
+                ? `${countdown.h}h ${countdown.m}min`
+                : `${countdown.m}min`}
+            </span>
+          )}
         </div>
       </div>
 
@@ -104,7 +134,10 @@ export function MatchCard({ match, home, away, isSaved, isDirty, onChange }: Pro
                 onChange={e => onChange(Math.max(0, parseInt(e.target.value) || 0), away)}
                 style={inputStyle}
                 onFocus={e => (e.target as HTMLInputElement).style.borderColor = '#F97316'}
-                onBlur={e => (e.target as HTMLInputElement).style.borderColor = isDirty ? '#F9731660' : '#E5E7EB'}
+                onBlur={e => {
+                  (e.target as HTMLInputElement).style.borderColor = isDirty ? '#F9731660' : '#E5E7EB';
+                  onBlur?.();
+                }}
               />
               <span style={{ color: '#D1D5DB', fontWeight: 700, fontSize: 12 }}>×</span>
               <input
@@ -112,7 +145,10 @@ export function MatchCard({ match, home, away, isSaved, isDirty, onChange }: Pro
                 onChange={e => onChange(home, Math.max(0, parseInt(e.target.value) || 0))}
                 style={inputStyle}
                 onFocus={e => (e.target as HTMLInputElement).style.borderColor = '#F97316'}
-                onBlur={e => (e.target as HTMLInputElement).style.borderColor = isDirty ? '#F9731660' : '#E5E7EB'}
+                onBlur={e => {
+                  (e.target as HTMLInputElement).style.borderColor = isDirty ? '#F9731660' : '#E5E7EB';
+                  onBlur?.();
+                }}
               />
             </div>
           )}

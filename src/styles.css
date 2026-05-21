@@ -216,3 +216,79 @@
   /* Heading size reduction */
   .page-title { font-size: 22px !important; }
 }
+
+/* ── Skeleton shimmer ───────────────────────────────────── */
+@keyframes shimmer {
+  0%   { background-position: -800px 0; }
+  100% { background-position:  800px 0; }
+}
+.skeleton {
+  background: linear-gradient(90deg, #E5E7EB 25%, #F9FAFB 50%, #E5E7EB 75%);
+  background-size: 800px 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+  border-radius: 6px;
+}
+
+/* ── Mobile bottom tab bar ──────────────────────────────── */
+.mobile-tab-bar {
+  display: none;
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  background: #FFFFFF;
+  border-top: 1px solid #E5E7EB;
+  padding: 6px 4px;
+  padding-bottom: max(env(safe-area-inset-bottom, 0px), 6px);
+  z-index: 50;
+  align-items: stretch;
+  box-shadow: 0 -2px 12px rgba(0,0,0,0.07);
+}
+.tab-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 4px 2px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #9CA3AF;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  border-radius: 10px;
+  transition: color 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.tab-item.active { color: #F97316; }
+.tab-item:active { background: #F3F4F6; }
+
+/* ── Countdown chip ─────────────────────────────────────── */
+.countdown-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  padding: 2px 7px;
+  border-radius: 20px;
+}
+.countdown-chip.urgent {
+  background: #FEF2F2;
+  color: #EF4444;
+  border: 1px solid #FCA5A5;
+}
+.countdown-chip.normal {
+  background: #F3F4F6;
+  color: #6B7280;
+  border: 1px solid #E5E7EB;
+}
+
+@media (max-width: 768px) {
+  .mobile-tab-bar { display: flex !important; }
+  .header-right   { margin-left: auto; }
+  main { padding-bottom: 80px !important; }
+}

@@ -75,6 +75,40 @@ function timeAgo(isoString: string): string {
   return `há ${Math.floor(diff / 86400)}d`;
 }
 
+function SkeletonStatPill() {
+  return (
+    <div className="stat-card" style={{ flexDirection: 'column', gap: 10, padding: 16 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div className="skeleton" style={{ width: 32, height: 32, borderRadius: 9 }} />
+        <div className="skeleton" style={{ width: 72, height: 10 }} />
+      </div>
+      <div>
+        <div className="skeleton" style={{ width: 56, height: 28, borderRadius: 8 }} />
+        <div className="skeleton" style={{ width: 100, height: 9, marginTop: 6 }} />
+      </div>
+    </div>
+  );
+}
+
+function useNextMatchCountdown(kickoffAt: string | undefined) {
+  function calc() {
+    if (!kickoffAt) return null;
+    const diff = new Date(kickoffAt.endsWith('Z') ? kickoffAt : kickoffAt + 'Z').getTime() - Date.now();
+    if (diff <= 0) return null;
+    const d = Math.floor(diff / 86400000);
+    const h = Math.floor((diff % 86400000) / 3600000);
+    const m = Math.floor((diff % 3600000) / 60000);
+    return { d, h, m };
+  }
+  const [t, setT] = useState(calc);
+  useEffect(() => {
+    setT(calc());
+    const id = setInterval(() => setT(calc()), 30000);
+    return () => clearInterval(id);
+  }, [kickoffAt]);
+  return t;
+}
+
 const EVENT_STYLE = {
   1: { bg: '#22C55E18', color: '#22C55E', label: 'EXATO', icon: '🎯' },
   2: { bg: '#F9731618', color: '#F97316', label: 'CERTO', icon: '✓' },
@@ -184,6 +218,8 @@ export function Dashboard({ poolId, onGoToJogos, onGoToPrecopa, onGoToGroups, on
     ? evolution.map(e => ({ r: e.round, pts: e.totalPoints }))
     : null;
 
+  const nextMatchCountdown = useNextMatchCountdown(nextMatch?.kickoffAt);
+
   const checklist = [
     {
       done: hasChampion,
@@ -216,7 +252,7 @@ export function Dashboard({ poolId, onGoToJogos, onGoToPrecopa, onGoToGroups, on
   ];
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 24, paddingBottom: 72 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
 
       {/* ── Header ── */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
@@ -237,44 +273,50 @@ export function Dashboard({ poolId, onGoToJogos, onGoToPrecopa, onGoToGroups, on
         className="stat-cards-grid"
         style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 12 }}
       >
-        <StatPill
-          icon={<Star size={17} />}
-          label="Pontuação"
-          value={hasPool ? (myStats?.totalPoints ?? 0) : '—'}
-          sub={myStats ? `${myStats.exactScores} placares exatos` : (hasPool ? 'Sem pontos ainda' : 'Selecione um bolão')}
-          color="#D97706" bg="#D9770610"
-        />
-        <StatPill
-          icon={<Trophy size={17} />}
-          label="Posição"
-          value={myStats ? `${myStats.position}º` : '—'}
-          sub={myStats && ranking.length > 0 ? `de ${ranking.length} participante${ranking.length !== 1 ? 's' : ''}` : 'Sem ranking'}
-          color="#F97316" bg="#F9731610"
-        />
-        <StatPill
-          icon={<Target size={17} />}
-          label="Palpites Feitos"
-          value={hasPool ? `${doneCount}` : '—'}
-          sub={hasPool && totalMatches > 0 ? `de ${totalMatches} jogos · ${donePct}%` : 'Selecione um bolão'}
-          color="#22C55E" bg="#22C55E10"
-          onClick={onGoToJogos}
-        />
-        <StatPill
-          icon={<AlertCircle size={17} />}
-          label="Pendentes"
-          value={hasPool ? pendingCount : '—'}
-          sub={hasPool ? (pendingCount > 0 ? 'palpites em aberto' : 'Tudo em dia! 🎉') : 'Selecione um bolão'}
-          color={pendingCount > 0 ? '#F97316' : '#22C55E'} bg={pendingCount > 0 ? '#F9731610' : '#22C55E10'}
-          onClick={onGoToJogos}
-        />
-        <StatPill
-          icon={<Award size={17} />}
-          label="Campeão"
-          value={hasPool ? championCode : '—'}
-          sub={hasPool ? (hasChampion ? championName! : 'Não definido ainda') : 'Selecione um bolão'}
-          color={hasChampion ? '#A855F7' : '#F97316'} bg={hasChampion ? '#A855F710' : '#F9731610'}
-          onClick={onGoToPrecopa}
-        />
+        {loadingR && hasPool ? (
+          Array.from({ length: 5 }).map((_, i) => <SkeletonStatPill key={i} />)
+        ) : (
+          <>
+            <StatPill
+              icon={<Star size={17} />}
+              label="Pontuação"
+              value={hasPool ? (myStats?.totalPoints ?? 0) : '—'}
+              sub={myStats ? `${myStats.exactScores} placares exatos` : (hasPool ? 'Sem pontos ainda' : 'Selecione um bolão')}
+              color="#D97706" bg="#D9770610"
+            />
+            <StatPill
+              icon={<Trophy size={17} />}
+              label="Posição"
+              value={myStats ? `${myStats.position}º` : '—'}
+              sub={myStats && ranking.length > 0 ? `de ${ranking.length} participante${ranking.length !== 1 ? 's' : ''}` : 'Sem ranking'}
+              color="#F97316" bg="#F9731610"
+            />
+            <StatPill
+              icon={<Target size={17} />}
+              label="Palpites Feitos"
+              value={hasPool ? `${doneCount}` : '—'}
+              sub={hasPool && totalMatches > 0 ? `de ${totalMatches} jogos · ${donePct}%` : 'Selecione um bolão'}
+              color="#22C55E" bg="#22C55E10"
+              onClick={onGoToJogos}
+            />
+            <StatPill
+              icon={<AlertCircle size={17} />}
+              label="Pendentes"
+              value={hasPool ? pendingCount : '—'}
+              sub={hasPool ? (pendingCount > 0 ? 'palpites em aberto' : 'Tudo em dia! 🎉') : 'Selecione um bolão'}
+              color={pendingCount > 0 ? '#F97316' : '#22C55E'} bg={pendingCount > 0 ? '#F9731610' : '#22C55E10'}
+              onClick={onGoToJogos}
+            />
+            <StatPill
+              icon={<Award size={17} />}
+              label="Campeão"
+              value={hasPool ? championCode : '—'}
+              sub={hasPool ? (hasChampion ? championName! : 'Não definido ainda') : 'Selecione um bolão'}
+              color={hasChampion ? '#A855F7' : '#F97316'} bg={hasChampion ? '#A855F710' : '#F9731610'}
+              onClick={onGoToPrecopa}
+            />
+          </>
+        )}
       </div>
 
       {/* ── Hero match + Checklist ── */}
@@ -298,11 +340,29 @@ export function Dashboard({ poolId, onGoToJogos, onGoToPrecopa, onGoToGroups, on
           <div style={{ position: 'relative', zIndex: 1 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
               <p style={{ margin: 0, fontSize: 10, fontWeight: 800, color: 'rgba(255,255,255,0.6)', textTransform: 'uppercase', letterSpacing: '0.14em' }}>Próximo Jogo</p>
-              {nextMatch?.groupName && (
-                <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.12em', padding: '3px 10px', borderRadius: 20, background: 'rgba(217,119,6,0.3)', color: '#FCD34D', border: '1px solid rgba(217,119,6,0.5)' }}>
-                  GRUPO {nextMatch.groupName}
-                </span>
-              )}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                {nextMatch && nextMatchCountdown && (
+                  <span style={{
+                    fontSize: 10, fontWeight: 800, letterSpacing: '0.06em',
+                    padding: '3px 10px', borderRadius: 20,
+                    background: 'rgba(0,0,0,0.3)', color: 'rgba(255,255,255,0.9)',
+                    border: '1px solid rgba(255,255,255,0.15)',
+                    display: 'flex', alignItems: 'center', gap: 4,
+                  }}>
+                    <Clock size={9} />
+                    {nextMatchCountdown.d > 0
+                      ? `Em ${nextMatchCountdown.d}d ${nextMatchCountdown.h}h`
+                      : nextMatchCountdown.h > 0
+                      ? `Em ${nextMatchCountdown.h}h ${nextMatchCountdown.m}min`
+                      : `Em ${nextMatchCountdown.m}min`}
+                  </span>
+                )}
+                {nextMatch?.groupName && (
+                  <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.12em', padding: '3px 10px', borderRadius: 20, background: 'rgba(217,119,6,0.3)', color: '#FCD34D', border: '1px solid rgba(217,119,6,0.5)' }}>
+                    GRUPO {nextMatch.groupName}
+                  </span>
+                )}
+              </div>
             </div>
 
           {loadingM ? (
@@ -672,25 +732,6 @@ export function Dashboard({ poolId, onGoToJogos, onGoToPrecopa, onGoToGroups, on
         )}
       </div>
 
-      {/* ── Mobile sticky CTA ── */}
-      <div
-        className="nav-mobile"
-        style={{
-          display: 'none',
-          position: 'fixed', bottom: 0, left: 0, right: 0,
-          padding: '12px 16px',
-          background: '#FFFFFFEE',
-          borderTop: '1px solid #E5E7EB',
-          backdropFilter: 'blur(8px)',
-          zIndex: 50,
-        }}
-      >
-        {onGoToJogos && (
-          <button onClick={onGoToJogos} className="btn-primary">
-            <Zap size={14} /> PALPITAR AGORA
-          </button>
-        )}
-      </div>
     </div>
   );
 }

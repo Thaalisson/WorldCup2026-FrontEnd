@@ -16,20 +16,28 @@ import { AdminPanel } from './pages/AdminPanel';
 import { PoolSettings } from './pages/PoolSettings';
 import { apiGet, apiPost } from './services/api';
 import type { Pool } from './types';
-import { Plus, Hash, X, ChevronDown, Menu, Shield, Copy, Check, Share2, Users } from 'lucide-react';
+import { Plus, Hash, X, ChevronDown, Shield, Copy, Check, Share2, Users, Home, Zap, Star, BarChart2, Trophy, Flag, Target, MoreHorizontal } from 'lucide-react';
 
 type Page = 'dashboard' | 'jogos' | 'precopa' | 'grupos' | 'grouppreds' | 'knockout' | 'boloes' | 'ranking' | 'stats' | 'selecoes' | 'admin' | 'settings';
 
-const NAV: { id: Page; label: string; adminOnly?: boolean }[] = [
-  { id: 'dashboard',  label: 'DASHBOARD' },
-  { id: 'jogos',      label: 'JOGOS' },
-  { id: 'precopa',    label: 'PRÉ-COPA' },
-  { id: 'grouppreds', label: 'GRUPOS' },
-  { id: 'boloes',     label: 'MEUS BOLÕES' },
-  { id: 'ranking',    label: 'RANKING' },
-  { id: 'stats',      label: 'STATS' },
-  { id: 'selecoes',   label: 'SELEÇÕES' },
+const NAV: { id: Page; label: string; icon: React.ReactNode }[] = [
+  { id: 'dashboard',  label: 'DASHBOARD',  icon: <Home size={11} /> },
+  { id: 'jogos',      label: 'JOGOS',      icon: <Zap size={11} /> },
+  { id: 'precopa',    label: 'PRÉ-COPA',   icon: <Star size={11} /> },
+  { id: 'grouppreds', label: 'GRUPOS',     icon: <Target size={11} /> },
+  { id: 'boloes',     label: 'MEUS BOLÕES',icon: <Users size={11} /> },
+  { id: 'ranking',    label: 'RANKING',    icon: <Trophy size={11} /> },
+  { id: 'stats',      label: 'STATS',      icon: <BarChart2 size={11} /> },
+  { id: 'selecoes',   label: 'SELEÇÕES',   icon: <Flag size={11} /> },
 ];
+
+const MOBILE_TABS = [
+  { id: 'dashboard',  icon: <Home size={20} />,         label: 'Início' },
+  { id: 'jogos',      icon: <Zap size={20} />,          label: 'Jogos' },
+  { id: 'grouppreds', icon: <Target size={20} />,       label: 'Grupos' },
+  { id: 'ranking',    icon: <Trophy size={20} />,       label: 'Ranking' },
+  { id: 'mais',       icon: <MoreHorizontal size={20} />, label: 'Mais' },
+] as const;
 
 function Logo() {
   return (
@@ -135,7 +143,9 @@ function MainApp() {
               key={item.id}
               onClick={() => setPage(item.id)}
               className={`nav-link${page === item.id ? ' active' : ''}`}
+              style={{ display: 'flex', alignItems: 'center', gap: 5 }}
             >
+              {item.icon}
               {item.label}
             </button>
           ))}
@@ -146,16 +156,7 @@ function MainApp() {
           )}
         </nav>
 
-        {/* Mobile hamburger */}
-        <button
-          className="nav-mobile"
-          style={{ display: 'none', background: 'none', border: 'none', color: '#6B7280', cursor: 'pointer', padding: 8, marginLeft: 'auto' }}
-          onClick={() => setMobileNavOpen(v => !v)}
-        >
-          <Menu size={20} />
-        </button>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div className="header-right" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           {/* Pool selector */}
           {pools.length > 0 && (
             <div style={{ position: 'relative' }}>
@@ -271,31 +272,77 @@ function MainApp() {
         </div>
       </header>
 
-      {/* Mobile nav dropdown */}
+      {/* Mobile "Mais" bottom sheet */}
       {mobileNavOpen && (
-        <div className="nav-mobile" style={{ display: 'flex', flexDirection: 'column', background: '#FFFFFF', borderBottom: '1px solid #E5E7EB', padding: '8px 0' }}>
-          {NAV.map(item => (
-            <button key={item.id} onClick={() => { setPage(item.id); setMobileNavOpen(false); }}
-              style={{ padding: '12px 24px', background: 'none', border: 'none', textAlign: 'left', color: page === item.id ? '#F97316' : '#6B7280', fontSize: 13, fontWeight: 700, cursor: 'pointer', letterSpacing: '0.08em' }}>
-              {item.label}
+        <>
+          {/* Backdrop */}
+          <div
+            style={{
+              position: 'fixed', top: 0, left: 0, right: 0, bottom: 64,
+              background: 'rgba(0,0,0,0.35)',
+              zIndex: 48,
+            }}
+            onClick={() => setMobileNavOpen(false)}
+          />
+          {/* Sheet */}
+          <div style={{
+            position: 'fixed',
+            bottom: 64, left: 0, right: 0,
+            background: '#FFFFFF',
+            borderRadius: '20px 20px 0 0',
+            boxShadow: '0 -8px 32px rgba(0,0,0,0.12)',
+            padding: '0 0 8px',
+            zIndex: 49,
+          }}>
+            {/* Handle */}
+            <div style={{ display: 'flex', justifyContent: 'center', padding: '12px 0 8px' }}>
+              <div style={{ width: 36, height: 4, background: '#E5E7EB', borderRadius: 2 }} />
+            </div>
+            {[
+              { id: 'precopa' as Page, label: 'PRÉ-COPA', icon: <Star size={16} /> },
+              { id: 'boloes' as Page,  label: 'MEUS BOLÕES', icon: <Users size={16} /> },
+              { id: 'stats' as Page,   label: 'STATS', icon: <BarChart2 size={16} /> },
+              { id: 'selecoes' as Page,label: 'SELEÇÕES', icon: <Flag size={16} /> },
+            ].map(item => (
+              <button
+                key={item.id}
+                onClick={() => { setPage(item.id); setMobileNavOpen(false); }}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 14,
+                  padding: '13px 24px', width: '100%',
+                  background: page === item.id ? '#FFF7ED' : 'none',
+                  border: 'none', cursor: 'pointer',
+                  color: page === item.id ? '#F97316' : '#374151',
+                  fontSize: 13, fontWeight: 700, letterSpacing: '0.08em',
+                }}
+              >
+                <span style={{ color: page === item.id ? '#F97316' : '#9CA3AF' }}>{item.icon}</span>
+                {item.label}
+              </button>
+            ))}
+            {user?.isAdmin && (
+              <button
+                onClick={() => { setPage('admin'); setMobileNavOpen(false); }}
+                style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '13px 24px', width: '100%', background: 'none', border: 'none', color: '#EF4444', fontSize: 13, fontWeight: 700, cursor: 'pointer', letterSpacing: '0.08em' }}
+              >
+                <Shield size={16} /> ADMIN
+              </button>
+            )}
+            <div style={{ height: 1, background: '#F3F4F6', margin: '4px 16px' }} />
+            <button
+              onClick={() => { setShowCreatePool(v => !v); setShowJoinPool(false); setPoolMsg(''); setMobileNavOpen(false); }}
+              style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '13px 24px', width: '100%', background: 'none', border: 'none', color: '#6B7280', fontSize: 13, fontWeight: 700, cursor: 'pointer', letterSpacing: '0.08em' }}
+            >
+              <Plus size={16} style={{ color: '#9CA3AF' }} /> CRIAR BOLÃO
             </button>
-          ))}
-          {user?.isAdmin && (
-            <button onClick={() => { setPage('admin'); setMobileNavOpen(false); }}
-              style={{ padding: '12px 24px', background: 'none', border: 'none', textAlign: 'left', color: '#EF4444', fontSize: 13, fontWeight: 700, cursor: 'pointer', letterSpacing: '0.08em', display: 'flex', alignItems: 'center', gap: 6 }}>
-              <Shield size={13} /> ADMIN
+            <button
+              onClick={() => { setShowJoinPool(v => !v); setShowCreatePool(false); setPoolMsg(''); setMobileNavOpen(false); }}
+              style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '13px 24px', width: '100%', background: 'none', border: 'none', color: '#6B7280', fontSize: 13, fontWeight: 700, cursor: 'pointer', letterSpacing: '0.08em' }}
+            >
+              <Hash size={16} style={{ color: '#9CA3AF' }} /> ENTRAR COM CÓDIGO
             </button>
-          )}
-          <div style={{ height: 1, background: '#E5E7EB', margin: '4px 16px' }} />
-          <button onClick={() => { setShowCreatePool(v => !v); setShowJoinPool(false); setPoolMsg(''); setMobileNavOpen(false); }}
-            style={{ padding: '12px 24px', background: 'none', border: 'none', textAlign: 'left', color: '#6B7280', fontSize: 13, fontWeight: 700, cursor: 'pointer', letterSpacing: '0.08em', display: 'flex', alignItems: 'center', gap: 8 }}>
-            <Plus size={13} /> CRIAR BOLÃO
-          </button>
-          <button onClick={() => { setShowJoinPool(v => !v); setShowCreatePool(false); setPoolMsg(''); setMobileNavOpen(false); }}
-            style={{ padding: '12px 24px', background: 'none', border: 'none', textAlign: 'left', color: '#6B7280', fontSize: 13, fontWeight: 700, cursor: 'pointer', letterSpacing: '0.08em', display: 'flex', alignItems: 'center', gap: 8 }}>
-            <Hash size={13} /> ENTRAR COM CÓDIGO
-          </button>
-        </div>
+          </div>
+        </>
       )}
 
       {/* Pool forms */}
@@ -417,8 +464,31 @@ function MainApp() {
         </div>
       )}
 
+      {/* Mobile bottom tab bar */}
+      <nav className="mobile-tab-bar">
+        {MOBILE_TABS.map(tab => {
+          const mainTabs: string[] = ['dashboard', 'jogos', 'grouppreds', 'ranking'];
+          const isActive = tab.id === 'mais'
+            ? !mainTabs.includes(page)
+            : page === tab.id;
+          return (
+            <button
+              key={tab.id}
+              className={`tab-item${isActive ? ' active' : ''}`}
+              onClick={() => {
+                if (tab.id === 'mais') { setMobileNavOpen(v => !v); }
+                else { setPage(tab.id as Page); setMobileNavOpen(false); }
+              }}
+            >
+              {tab.icon}
+              <span>{tab.label}</span>
+            </button>
+          );
+        })}
+      </nav>
+
       {/* Page content */}
-      <main style={{ flex: 1, padding: '28px 24px', maxWidth: 1280, width: '100%', margin: '0 auto' }}>
+      <main style={{ flex: 1, padding: '28px 24px', maxWidth: 1280, width: '100%', margin: '0 auto', boxSizing: 'border-box' }}>
         {page === 'dashboard' && <Dashboard
           poolId={activePoolId || undefined}
           onGoToJogos={() => setPage('jogos')}
