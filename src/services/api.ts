@@ -1,70 +1,57 @@
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'https://localhost:5001/api';
 
-function getToken(): string | null {
-  try {
-    const raw = localStorage.getItem('bolao_auth');
-    return raw ? JSON.parse(raw).token : null;
-  } catch {
-    return null;
+// Single in-flight refresh promise — prevents multiple concurrent refresh calls
+let refreshPromise: Promise<boolean> | null = null;
+
+async function tryRefresh(): Promise<boolean> {
+  if (!refreshPromise) {
+    refreshPromise = fetch(`${API_BASE_URL}/auth/refresh`, {
+      method: 'POST',
+      credentials: 'include',
+    })
+      .then(r => r.ok)
+      .catch(() => false)
+      .finally(() => { refreshPromise = null; });
   }
+  return refreshPromise;
 }
 
-function authHeaders(extra?: Record<string, string>): Record<string, string> {
-  const token = getToken();
-  return {
-    'Content-Type': 'application/json',
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    ...extra
+async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
+  const opts: RequestInit = {
+    method,
+    credentials: 'include',
+    ...(body !== undefined
+      ? { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }
+      : {}),
   };
-}
 
-function checkSession(response: Response): void {
-  if (response.status === 401) {
-    localStorage.removeItem('bolao_auth');
-    window.location.reload();
-    throw new Error('Sessão expirada. Faça login novamente.');
+  let response = await fetch(`${API_BASE_URL}${path}`, opts);
+
+  // On 401 outside of auth endpoints: try refresh then retry once
+  if (response.status === 401 && !path.startsWith('/auth/')) {
+    const refreshed = await tryRefresh();
+    if (refreshed) {
+      response = await fetch(`${API_BASE_URL}${path}`, opts);
+    }
+    if (response.status === 401) {
+      localStorage.removeItem('bolao_user');
+      window.location.href = '/';
+      throw new Error('Sessão expirada.');
+    }
   }
-}
 
-export async function apiGet<T>(path: string): Promise<T> {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    headers: authHeaders()
-  });
-  checkSession(response);
-  if (!response.ok) throw new Error(`${response.status} GET ${path}`);
-  return response.json();
-}
-
-export async function apiPost<T>(path: string, body: unknown): Promise<T> {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    method: 'POST',
-    headers: authHeaders(),
-    body: JSON.stringify(body)
-  });
-  checkSession(response);
   if (!response.ok) {
     const text = await response.text().catch(() => '');
-    throw new Error(`${response.status} POST ${path}: ${text}`);
+    throw new Error(`${response.status} ${method} ${path}${text ? ': ' + text : ''}`);
   }
+
+  if (response.status === 204) return undefined as T;
+  const ct = response.headers.get('content-type') ?? '';
+  if (!ct.includes('application/json')) return undefined as T;
   return response.json();
 }
 
-export async function apiPut<T>(path: string, body: unknown): Promise<T> {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    method: 'PUT',
-    headers: authHeaders(),
-    body: JSON.stringify(body)
-  });
-  checkSession(response);
-  if (!response.ok) throw new Error(`${response.status} PUT ${path}`);
-  return response.json();
-}
-
-export async function apiDelete(path: string): Promise<void> {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    method: 'DELETE',
-    headers: authHeaders()
-  });
-  checkSession(response);
-  if (!response.ok) throw new Error(`${response.status} DELETE ${path}`);
-}
+export const apiGet    = <T>(path: string)                    => request<T>('GET',    path);
+export const apiPost   = <T>(path: string, body: unknown)     => request<T>('POST',   path, body);
+export const apiPut    = <T>(path: string, body: unknown)     => request<T>('PUT',    path, body);
+export const apiDelete =    (path: string)                    => request<void>('DELETE', path);

@@ -16,10 +16,10 @@ export function Login({ onGoToRegister }: Props) {
     setError('');
     setLoading(true);
     try {
-      const data = await apiPost<{ token: string; userId: string; name: string; email: string; isAdmin: boolean }>(
+      const data = await apiPost<{ userId: string; name: string; email: string; isAdmin: boolean }>(
         '/auth/login', { email, password }
       );
-      login(data.token, { id: data.userId, name: data.name, email: data.email, isAdmin: data.isAdmin ?? false });
+      login({ id: data.userId, name: data.name, email: data.email, isAdmin: data.isAdmin ?? false });
     } catch {
       setError('E-mail ou senha inválidos.');
     } finally {

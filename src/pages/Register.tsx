@@ -18,10 +18,10 @@ export function Register({ onGoToLogin }: Props) {
     if (password.length < 6) { setError('A senha deve ter pelo menos 6 caracteres.'); return; }
     setLoading(true);
     try {
-      const data = await apiPost<{ token: string; userId: string; name: string; email: string; isAdmin: boolean }>(
+      const data = await apiPost<{ userId: string; name: string; email: string; isAdmin: boolean }>(
         '/auth/register', { name, email, password }
       );
-      login(data.token, { id: data.userId, name: data.name, email: data.email, isAdmin: data.isAdmin ?? false });
+      login({ id: data.userId, name: data.name, email: data.email, isAdmin: data.isAdmin ?? false });
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : '';
       setError(msg.includes('409') ? 'E-mail já cadastrado.' : 'Erro ao criar conta. Tente novamente.');
