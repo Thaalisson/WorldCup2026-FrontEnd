@@ -1,6 +1,6 @@
 ﻿import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { apiPost } from '../services/api';
+import { apiPost, setStoredToken } from '../services/api';
 
 type Props = { onGoToRegister: () => void };
 
@@ -16,9 +16,10 @@ export function Login({ onGoToRegister }: Props) {
     setError('');
     setLoading(true);
     try {
-      const data = await apiPost<{ userId: string; name: string; email: string; isAdmin: boolean }>(
+      const data = await apiPost<{ userId: string; name: string; email: string; isAdmin: boolean; token: string }>(
         '/auth/login', { email, password }
       );
+      setStoredToken(data.token);
       login({ id: data.userId, name: data.name, email: data.email, isAdmin: data.isAdmin ?? false });
     } catch {
       setError('E-mail ou senha inválidos.');

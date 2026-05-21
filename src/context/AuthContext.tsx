@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, type ReactNode } from 'react';
-import { apiPost } from '../services/api';
+import { apiPost, setStoredToken } from '../services/api';
 
 export type AuthUser = { id: string; name: string; email: string; isAdmin: boolean };
 
@@ -37,6 +37,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function logout() {
     localStorage.removeItem(USER_KEY);
+    setStoredToken(null);
     setUser(null);
     try { await apiPost('/auth/logout', {}); } catch {}
   }

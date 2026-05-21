@@ -1,6 +1,6 @@
 ﻿import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { apiPost } from '../services/api';
+import { apiPost, setStoredToken } from '../services/api';
 
 type Props = { onGoToLogin: () => void };
 
@@ -18,9 +18,10 @@ export function Register({ onGoToLogin }: Props) {
     if (password.length < 6) { setError('A senha deve ter pelo menos 6 caracteres.'); return; }
     setLoading(true);
     try {
-      const data = await apiPost<{ userId: string; name: string; email: string; isAdmin: boolean }>(
+      const data = await apiPost<{ userId: string; name: string; email: string; isAdmin: boolean; token: string }>(
         '/auth/register', { name, email, password }
       );
+      setStoredToken(data.token);
       login({ id: data.userId, name: data.name, email: data.email, isAdmin: data.isAdmin ?? false });
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : '';

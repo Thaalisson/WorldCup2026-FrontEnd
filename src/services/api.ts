@@ -1,4 +1,14 @@
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'https://localhost:5001/api';
+const TOKEN_KEY = 'bolao_token';
+
+export function setStoredToken(token: string | null) {
+  if (token) localStorage.setItem(TOKEN_KEY, token);
+  else localStorage.removeItem(TOKEN_KEY);
+}
+
+function getStoredToken(): string | null {
+  return localStorage.getItem(TOKEN_KEY);
+}
 
 // Single in-flight refresh promise — prevents multiple concurrent refresh calls
 let refreshPromise: Promise<boolean> | null = null;
@@ -9,32 +19,45 @@ async function tryRefresh(): Promise<boolean> {
       method: 'POST',
       credentials: 'include',
     })
-      .then(r => r.ok)
+      .then(async r => {
+        if (!r.ok) return false;
+        try {
+          const data = await r.json();
+          if (data?.token) setStoredToken(data.token);
+        } catch {}
+        return true;
+      })
       .catch(() => false)
       .finally(() => { refreshPromise = null; });
   }
   return refreshPromise;
 }
 
-async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
-  const opts: RequestInit = {
+function buildOpts(method: string, body?: unknown): RequestInit {
+  const headers: Record<string, string> = {};
+  const token = getStoredToken();
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  if (body !== undefined) headers['Content-Type'] = 'application/json';
+  return {
     method,
     credentials: 'include',
-    ...(body !== undefined
-      ? { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }
-      : {}),
+    ...(Object.keys(headers).length > 0 ? { headers } : {}),
+    ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
   };
+}
 
-  let response = await fetch(`${API_BASE_URL}${path}`, opts);
+async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
+  let response = await fetch(`${API_BASE_URL}${path}`, buildOpts(method, body));
 
   // On 401 outside of auth endpoints: try refresh then retry once
   if (response.status === 401 && !path.startsWith('/auth/')) {
     const refreshed = await tryRefresh();
     if (refreshed) {
-      response = await fetch(`${API_BASE_URL}${path}`, opts);
+      response = await fetch(`${API_BASE_URL}${path}`, buildOpts(method, body));
     }
     if (response.status === 401) {
       localStorage.removeItem('bolao_user');
+      localStorage.removeItem(TOKEN_KEY);
       window.location.href = '/';
       throw new Error('Sessão expirada.');
     }
