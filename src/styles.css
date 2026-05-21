@@ -207,13 +207,8 @@
 
 /* ── Extra small screens (≤ 480px) ─────────────────────── */
 @media (max-width: 480px) {
-  /* Stat pills: 1 column on very small phones */
   .stat-cards-grid { grid-template-columns: 1fr !important; }
-
-  /* Welcome screen: stack buttons */
   .welcome-grid { grid-template-columns: 1fr !important; }
-
-  /* Heading size reduction */
   .page-title { font-size: 22px !important; }
 }
 

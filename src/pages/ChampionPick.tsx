@@ -9,6 +9,24 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error';
 // Tournament starts June 11, 2026 — predictions locked from that date
 const TOURNAMENT_START = new Date('2026-06-11T12:00:00Z');
 
+function useLockCDDown() {
+  function calc() {
+    const diff = TOURNAMENT_START.getTime() - Date.now();
+    if (diff <= 0) return null;
+    const d = Math.floor(diff / 86400000);
+    const h = Math.floor((diff % 86400000) / 3600000);
+    const m = Math.floor((diff % 3600000) / 60000);
+    return { d, h, m };
+  }
+  const [t, setT] = useState(calc);
+  useEffect(() => {
+    setT(calc());
+    const id = setInterval(() => setT(calc()), 60000);
+    return () => clearInterval(id);
+  }, []);
+  return t;
+}
+
 function FlagImg({ isoCode, name }: { isoCode?: string; name: string }) {
   if (!isoCode) return null;
   return (
@@ -90,6 +108,7 @@ export function ChampionPick({ poolId }: Props) {
   const [error, setError] = useState('');
 
   const isLocked = new Date() >= TOURNAMENT_START;
+  const lockCountdown = useLockCDDown();
 
   useEffect(() => {
     Promise.all([
@@ -148,6 +167,42 @@ export function ChampionPick({ poolId }: Props) {
           Palpite de campeão, vice e 3º lugar. Pontuação extra ao final do torneio.
         </p>
       </div>
+
+      {/* Lock countdown */}
+      {!isLocked && lockCountdown && (
+        <div style={{
+          background: lockCountdown.d <= 3 ? '#EF444410' : '#F9731610',
+          border: `1px solid ${lockCountdown.d <= 3 ? '#EF444430' : '#F9731630'}`,
+          borderRadius: 12,
+          padding: '14px 20px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: 12,
+        }}>
+          <div>
+            <p style={{ margin: 0, fontSize: 11, fontWeight: 800, color: lockCountdown.d <= 3 ? '#EF4444' : '#F97316', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+              ⏳ Palpites bloqueiam em:
+            </p>
+            <p style={{ margin: '3px 0 0', fontSize: 12, color: '#6B7280' }}>
+              11 jun às 12h00 UTC — Aproveite enquanto pode!
+            </p>
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            {[
+              { val: lockCountdown.d, label: 'dias' },
+              { val: lockCountdown.h, label: 'horas' },
+              { val: lockCountdown.m, label: 'min' },
+            ].map(({ val, label }) => (
+              <div key={label} style={{ textAlign: 'center', background: '#fff', border: '1px solid #E5E7EB', borderRadius: 8, padding: '6px 12px', minWidth: 44 }}>
+                <p style={{ margin: 0, fontSize: 20, fontWeight: 900, color: lockCountdown.d <= 3 ? '#EF4444' : '#F97316', lineHeight: 1 }}>{val}</p>
+                <p style={{ margin: '2px 0 0', fontSize: 9, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.1em' }}>{label}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {isLocked && (
         <div style={{ background: '#EF444415', border: '1px solid #EF444430', borderRadius: 10, padding: '12px 16px', fontSize: 13, color: '#EF4444', fontWeight: 600 }}>

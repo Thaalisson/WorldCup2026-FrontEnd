@@ -3,10 +3,25 @@ import { MatchCard } from '../components/MatchCard';
 import { apiGet, apiPost } from '../services/api';
 import type { Match, Prediction } from '../types';
 import { formatBrazilDate, isMatchLocked } from '../utils/timezone';
-import { Save, CheckCircle, AlertCircle } from 'lucide-react';
+import { Save, CheckCircle, AlertCircle, Calendar, Zap } from 'lucide-react';
 
 type Props = { poolId: string };
 type ScoreEntry = { home: number; away: number };
+type DateFilter = 'all' | 'today' | 'week';
+
+function isBrazilToday(isoString: string): boolean {
+  const now = new Date();
+  const matchDate = new Date(isoString.endsWith('Z') ? isoString : isoString + 'Z');
+  const fmt = (d: Date) => d.toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', year: 'numeric' });
+  return fmt(matchDate) === fmt(now);
+}
+
+function isBrazilThisWeek(isoString: string): boolean {
+  const matchDate = new Date(isoString.endsWith('Z') ? isoString : isoString + 'Z');
+  const now = new Date();
+  const in7 = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+  return matchDate >= now && matchDate <= in7;
+}
 
 export function Predictions({ poolId }: Props) {
   const [matches, setMatches] = useState<Match[]>([]);
@@ -18,6 +33,7 @@ export function Predictions({ poolId }: Props) {
   const [saveMsg, setSaveMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [error, setError] = useState('');
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
+  const [dateFilter, setDateFilter] = useState<DateFilter>('all');
   const saveMsgTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const debounceTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
 
@@ -105,12 +121,16 @@ export function Predictions({ poolId }: Props) {
     new Set(realMatches.flatMap(m => m.groupName ? [m.groupName] : []))
   ).sort();
 
-  const upcomingFiltered = selectedGroup
-    ? upcoming.filter(m => m.groupName === selectedGroup)
-    : upcoming;
-  const finishedFiltered = selectedGroup
-    ? finished.filter(m => m.groupName === selectedGroup)
-    : finished;
+  const applyFilters = (list: Match[]) => {
+    let result = list;
+    if (dateFilter === 'today') result = result.filter(m => isBrazilToday(m.kickoffAt));
+    else if (dateFilter === 'week') result = result.filter(m => isBrazilThisWeek(m.kickoffAt));
+    if (selectedGroup) result = result.filter(m => m.groupName === selectedGroup);
+    return result;
+  };
+
+  const upcomingFiltered = applyFilters(upcoming);
+  const finishedFiltered = applyFilters(finished);
 
   const saveableCount = upcoming.filter(m => !isMatchLocked(m.kickoffAt)).length;
   const savedCount = upcoming.filter(m => !isMatchLocked(m.kickoffAt) && savedIds.has(m.id) && !dirtyIds.has(m.id)).length;
@@ -203,37 +223,64 @@ export function Predictions({ poolId }: Props) {
         </div>
       </div>
 
-      {/* ── Filtro por grupo ── */}
-      {groups.length > 0 && (
-        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
-          <span style={{ fontSize: 10, fontWeight: 700, color: '#9CA3AF', letterSpacing: '0.1em', textTransform: 'uppercase', marginRight: 2 }}>Grupo:</span>
-          <button
-            onClick={() => setSelectedGroup(null)}
-            style={{
-              padding: '4px 12px', borderRadius: 20, fontSize: 11, fontWeight: 700, cursor: 'pointer', border: 'none',
-              background: !selectedGroup ? '#F97316' : '#F3F4F6',
-              color: !selectedGroup ? '#fff' : '#6B7280',
-              transition: 'all 0.15s',
-            }}
-          >
-            TODOS
-          </button>
-          {groups.map(g => (
+      {/* ── Filtros de data + grupo ── */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {/* Date filter */}
+        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+          {([
+            { id: 'all',   label: 'Todos',        icon: null },
+            { id: 'today', label: 'Hoje',          icon: <Zap size={10} /> },
+            { id: 'week',  label: 'Esta semana',   icon: <Calendar size={10} /> },
+          ] as { id: DateFilter; label: string; icon: React.ReactNode }[]).map(f => (
             <button
-              key={g}
-              onClick={() => setSelectedGroup(selectedGroup === g ? null : g)}
+              key={f.id}
+              onClick={() => setDateFilter(f.id)}
               style={{
-                width: 32, height: 28, borderRadius: 8, fontSize: 11, fontWeight: 800, cursor: 'pointer', border: 'none',
-                background: selectedGroup === g ? '#F97316' : '#F3F4F6',
-                color: selectedGroup === g ? '#fff' : '#6B7280',
+                display: 'flex', alignItems: 'center', gap: 4,
+                padding: '5px 12px', borderRadius: 20, fontSize: 11, fontWeight: 700, cursor: 'pointer',
+                border: dateFilter === f.id ? 'none' : '1px solid #E5E7EB',
+                background: dateFilter === f.id ? '#111827' : '#fff',
+                color: dateFilter === f.id ? '#fff' : '#6B7280',
                 transition: 'all 0.15s',
               }}
             >
-              {g}
+              {f.icon}{f.label}
             </button>
           ))}
         </div>
-      )}
+
+        {/* Group filter */}
+        {groups.length > 0 && (
+          <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', alignItems: 'center' }}>
+            <span style={{ fontSize: 10, fontWeight: 700, color: '#9CA3AF', letterSpacing: '0.1em', textTransform: 'uppercase', marginRight: 2 }}>Grupo:</span>
+            <button
+              onClick={() => setSelectedGroup(null)}
+              style={{
+                padding: '3px 10px', borderRadius: 20, fontSize: 11, fontWeight: 700, cursor: 'pointer', border: 'none',
+                background: !selectedGroup ? '#F97316' : '#F3F4F6',
+                color: !selectedGroup ? '#fff' : '#6B7280',
+                transition: 'all 0.15s',
+              }}
+            >
+              TODOS
+            </button>
+            {groups.map(g => (
+              <button
+                key={g}
+                onClick={() => setSelectedGroup(selectedGroup === g ? null : g)}
+                style={{
+                  width: 30, height: 26, borderRadius: 7, fontSize: 11, fontWeight: 800, cursor: 'pointer', border: 'none',
+                  background: selectedGroup === g ? '#F97316' : '#F3F4F6',
+                  color: selectedGroup === g ? '#fff' : '#6B7280',
+                  transition: 'all 0.15s',
+                }}
+              >
+                {g}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
 
       {/* ── Próximos jogos agrupados por data ── */}
       {upcomingByDate.length > 0 && upcomingByDate.map(([date, dateMatches]) => (

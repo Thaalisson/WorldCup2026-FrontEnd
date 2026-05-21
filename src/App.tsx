@@ -14,21 +14,25 @@ import { Teams } from './pages/Teams';
 import { Knockout } from './pages/Knockout';
 import { AdminPanel } from './pages/AdminPanel';
 import { PoolSettings } from './pages/PoolSettings';
+import { Performance } from './pages/Performance';
 import { apiGet, apiPost } from './services/api';
-import type { Pool } from './types';
-import { Plus, Hash, X, ChevronDown, Shield, Copy, Check, Share2, Users, Home, Zap, Star, BarChart2, Trophy, Flag, Target, MoreHorizontal } from 'lucide-react';
+import type { Pool, Match } from './types';
+import { useToast } from './context/ToastContext';
+import { Plus, Hash, X, ChevronDown, Shield, Copy, Check, Share2, Users, Home, Zap, Star, BarChart2, Trophy, Flag, Target, MoreHorizontal, GitMerge, TrendingUp } from 'lucide-react';
 
-type Page = 'dashboard' | 'jogos' | 'precopa' | 'grupos' | 'grouppreds' | 'knockout' | 'boloes' | 'ranking' | 'stats' | 'selecoes' | 'admin' | 'settings';
+type Page = 'dashboard' | 'jogos' | 'precopa' | 'grupos' | 'grouppreds' | 'knockout' | 'boloes' | 'ranking' | 'stats' | 'performance' | 'selecoes' | 'admin' | 'settings';
 
 const NAV: { id: Page; label: string; icon: React.ReactNode }[] = [
   { id: 'dashboard',  label: 'DASHBOARD',  icon: <Home size={11} /> },
   { id: 'jogos',      label: 'JOGOS',      icon: <Zap size={11} /> },
   { id: 'precopa',    label: 'PRÉ-COPA',   icon: <Star size={11} /> },
   { id: 'grouppreds', label: 'GRUPOS',     icon: <Target size={11} /> },
+  { id: 'knockout',   label: 'MATA-MATA',  icon: <GitMerge size={11} /> },
   { id: 'boloes',     label: 'MEUS BOLÕES',icon: <Users size={11} /> },
-  { id: 'ranking',    label: 'RANKING',    icon: <Trophy size={11} /> },
-  { id: 'stats',      label: 'STATS',      icon: <BarChart2 size={11} /> },
-  { id: 'selecoes',   label: 'SELEÇÕES',   icon: <Flag size={11} /> },
+  { id: 'ranking',     label: 'RANKING',     icon: <Trophy size={11} /> },
+  { id: 'performance', label: 'PERFORMANCE', icon: <TrendingUp size={11} /> },
+  { id: 'stats',       label: 'STATS',       icon: <BarChart2 size={11} /> },
+  { id: 'selecoes',    label: 'SELEÇÕES',    icon: <Flag size={11} /> },
 ];
 
 const MOBILE_TABS = [
@@ -75,6 +79,39 @@ function MainApp() {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [createdPool, setCreatedPool] = useState<Pool | null>(null);
   const [copied, setCopied] = useState(false);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    let initialized = false;
+    function checkNewResults() {
+      apiGet<Match[]>('/matches').then(freshMatches => {
+        const seenKey = 'results_seen_v1';
+        const seen = new Set<string>(JSON.parse(localStorage.getItem(seenKey) ?? '[]'));
+        const newlyFinished = freshMatches.filter(
+          m => m.isFinished && m.homeTeam.name !== 'A Definir' && !seen.has(m.id)
+        );
+        if (!initialized) {
+          initialized = true;
+          for (const m of newlyFinished) seen.add(m.id);
+          localStorage.setItem(seenKey, JSON.stringify([...seen]));
+          return;
+        }
+        for (const m of newlyFinished) {
+          toast(
+            `⚽ ${m.homeTeam.name} ${m.homeScore ?? 0}×${m.awayScore ?? 0} ${m.awayTeam.name} — Resultado registrado!`,
+            'success'
+          );
+          seen.add(m.id);
+        }
+        if (newlyFinished.length > 0) {
+          localStorage.setItem(seenKey, JSON.stringify([...seen]));
+        }
+      }).catch(() => {});
+    }
+    checkNewResults();
+    const interval = setInterval(checkNewResults, 60000);
+    return () => clearInterval(interval);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     apiGet<Pool[]>('/pools')
@@ -299,10 +336,11 @@ function MainApp() {
               <div style={{ width: 36, height: 4, background: '#E5E7EB', borderRadius: 2 }} />
             </div>
             {[
-              { id: 'precopa' as Page, label: 'PRÉ-COPA', icon: <Star size={16} /> },
-              { id: 'boloes' as Page,  label: 'MEUS BOLÕES', icon: <Users size={16} /> },
-              { id: 'stats' as Page,   label: 'STATS', icon: <BarChart2 size={16} /> },
-              { id: 'selecoes' as Page,label: 'SELEÇÕES', icon: <Flag size={16} /> },
+              { id: 'precopa' as Page,     label: 'PRÉ-COPA',    icon: <Star size={16} /> },
+              { id: 'performance' as Page, label: 'PERFORMANCE', icon: <TrendingUp size={16} /> },
+              { id: 'boloes' as Page,      label: 'MEUS BOLÕES', icon: <Users size={16} /> },
+              { id: 'stats' as Page,       label: 'STATS',       icon: <BarChart2 size={16} /> },
+              { id: 'selecoes' as Page,    label: 'SELEÇÕES',    icon: <Flag size={16} /> },
             ].map(item => (
               <button
                 key={item.id}
@@ -558,6 +596,8 @@ function MainApp() {
         )}
         {page === 'ranking' && activePoolId && <Ranking poolId={activePoolId} />}
         {page === 'ranking' && !activePoolId && <EmptyState icon="🏅" text="Selecione um bolão para ver o ranking." />}
+        {page === 'performance' && activePoolId && <Performance poolId={activePoolId} />}
+        {page === 'performance' && !activePoolId && <EmptyState icon="📊" text="Selecione um bolão para ver sua performance." />}
         {page === 'stats' && <Stats poolId={activePoolId || undefined} />}
         {page === 'selecoes' && <Teams />}
       </main>

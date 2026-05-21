@@ -1,10 +1,24 @@
-﻿import type { RankingItem } from '../types';
+﻿import { useEffect, useMemo } from 'react';
+import type { RankingItem } from '../types';
 
-type Props = { items: RankingItem[] };
+type Props = { items: RankingItem[]; poolId?: string };
 
 const MEDALS = ['🥇', '🥈', '🥉'];
 
-export function RankingTable({ items }: Props) {
+export function RankingTable({ items, poolId }: Props) {
+  const prevPositions = useMemo<Record<string, number>>(() => {
+    if (!poolId) return {};
+    try { return JSON.parse(localStorage.getItem(`ranking_prev_${poolId}`) ?? '{}'); }
+    catch { return {}; }
+  }, [poolId]);
+
+  useEffect(() => {
+    if (!poolId || items.length === 0) return;
+    const current: Record<string, number> = {};
+    for (const item of items) current[item.userId] = item.position;
+    localStorage.setItem(`ranking_prev_${poolId}`, JSON.stringify(current));
+  }, [poolId, items]);
+
   if (items.length === 0) {
     return (
       <div className="card" style={{ padding: 48, textAlign: 'center', color: '#D1D5DB', fontSize: 14 }}>
@@ -44,7 +58,18 @@ export function RankingTable({ items }: Props) {
               onMouseLeave={e => (e.currentTarget as HTMLTableRowElement).style.background = i === 0 ? '#D9770608' : 'transparent'}
             >
               <td style={{ padding: '14px 16px', fontSize: 16 }}>
-                {MEDALS[i] ?? <span style={{ color: '#6B7280', fontSize: 12, fontWeight: 700 }}>{item.position}</span>}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                  {MEDALS[i] ?? <span style={{ color: '#6B7280', fontSize: 12, fontWeight: 700 }}>{item.position}</span>}
+                  {(() => {
+                    const delta = prevPositions[item.userId] != null ? prevPositions[item.userId] - item.position : 0;
+                    if (delta === 0) return null;
+                    return (
+                      <span style={{ fontSize: 10, fontWeight: 800, color: delta > 0 ? '#22C55E' : '#EF4444' }}>
+                        {delta > 0 ? `↑${delta}` : `↓${Math.abs(delta)}`}
+                      </span>
+                    );
+                  })()}
+                </div>
               </td>
               <td style={{ padding: '14px 16px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>

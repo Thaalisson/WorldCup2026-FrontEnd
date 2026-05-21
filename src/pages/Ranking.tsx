@@ -39,7 +39,7 @@ export function Ranking({ poolId }: Props) {
         </div>
       )}
       {error && <div className="card" style={{ padding: 20, color: '#EF4444', fontSize: 14, textAlign: 'center' }}>{error}</div>}
-      {!loading && !error && <RankingTable items={items} />}
+      {!loading && !error && <RankingTable items={items} poolId={poolId} />}
     </div>
   );
 }

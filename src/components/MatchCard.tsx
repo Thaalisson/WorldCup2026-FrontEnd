@@ -163,8 +163,35 @@ export function MatchCard({ match, home, away, isSaved, isDirty, onChange, onBlu
         </div>
       </div>
 
-      {/* Saved tag for locked+saved matches */}
-      {locked && isSaved && (
+      {/* Result feedback for finished matches */}
+      {match.isFinished && isSaved && (() => {
+        const ph = home, pa = away;
+        const ah = match.homeScore ?? 0, aa = match.awayScore ?? 0;
+        const predDir = ph > pa ? 1 : ph < pa ? -1 : 0;
+        const actDir  = ah > aa ? 1 : ah < aa ? -1 : 0;
+        const exact   = ph === ah && pa === aa;
+        const correct = !exact && predDir === actDir;
+        const wrong   = predDir !== actDir;
+        if (exact) return (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, fontSize: 10, fontWeight: 800, color: '#16A34A', background: '#F0FDF4', borderRadius: 6, padding: '4px 0' }}>
+            ✅ Placar exato!
+          </div>
+        );
+        if (correct) return (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, fontSize: 10, fontWeight: 800, color: '#D97706', background: '#FFFBEB', borderRadius: 6, padding: '4px 0' }}>
+            🟡 Resultado certo
+          </div>
+        );
+        if (wrong) return (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, fontSize: 10, fontWeight: 700, color: '#9CA3AF', background: '#F9FAFB', borderRadius: 6, padding: '4px 0' }}>
+            ❌ Errou
+          </div>
+        );
+        return null;
+      })()}
+
+      {/* Saved tag for locked (not finished) matches */}
+      {locked && !match.isFinished && isSaved && (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, fontSize: 10, color: '#22C55E', fontWeight: 700 }}>
           <CheckCircle size={11} /> Palpite salvo
         </div>

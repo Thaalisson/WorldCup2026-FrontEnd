@@ -109,6 +109,27 @@ function useNextMatchCountdown(kickoffAt: string | undefined) {
   return t;
 }
 
+const TOURNAMENT_START = new Date('2026-06-11T12:00:00Z');
+
+function useCopaCDDown() {
+  function calc() {
+    const diff = TOURNAMENT_START.getTime() - Date.now();
+    if (diff <= 0) return null;
+    const d = Math.floor(diff / 86400000);
+    const h = Math.floor((diff % 86400000) / 3600000);
+    const m = Math.floor((diff % 3600000) / 60000);
+    const s = Math.floor((diff % 60000) / 1000);
+    return { d, h, m, s };
+  }
+  const [t, setT] = useState(calc);
+  useEffect(() => {
+    setT(calc());
+    const id = setInterval(() => setT(calc()), 1000);
+    return () => clearInterval(id);
+  }, []);
+  return t;
+}
+
 const EVENT_STYLE = {
   1: { bg: '#22C55E18', color: '#22C55E', label: 'EXATO', icon: '🎯' },
   2: { bg: '#F9731618', color: '#F97316', label: 'CERTO', icon: '✓' },
@@ -219,6 +240,7 @@ export function Dashboard({ poolId, onGoToJogos, onGoToPrecopa, onGoToGroups, on
     : null;
 
   const nextMatchCountdown = useNextMatchCountdown(nextMatch?.kickoffAt);
+  const copaCountdown = useCopaCDDown();
 
   const checklist = [
     {
@@ -318,6 +340,58 @@ export function Dashboard({ poolId, onGoToJogos, onGoToPrecopa, onGoToGroups, on
           </>
         )}
       </div>
+
+      {/* ── Pre-Copa Countdown ── */}
+      {copaCountdown && (
+        <div style={{
+          background: 'linear-gradient(135deg, #1A3A5C 0%, #1E4D7B 100%)',
+          borderRadius: 16,
+          padding: '20px 28px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          boxShadow: '0 4px 24px rgba(26,58,92,0.25)',
+          flexWrap: 'wrap',
+          gap: 16,
+        }}>
+          <div>
+            <p style={{ margin: 0, fontSize: 10, fontWeight: 800, color: 'rgba(255,255,255,0.65)', letterSpacing: '0.14em', textTransform: 'uppercase' }}>Copa do Mundo 2026</p>
+            <h2 style={{ margin: '4px 0 2px', fontSize: 20, fontWeight: 900, color: '#fff', fontStyle: 'italic' }}>🏆 A Copa começa em:</h2>
+            <p style={{ margin: 0, fontSize: 12, color: 'rgba(255,255,255,0.7)' }}>11 de junho · Los Angeles, Nova York, Cidade do México</p>
+          </div>
+          <div style={{ display: 'flex', gap: 10 }}>
+            {[
+              { val: copaCountdown.d, label: 'Dias' },
+              { val: copaCountdown.h, label: 'Horas' },
+              { val: copaCountdown.m, label: 'Min' },
+              { val: copaCountdown.s, label: 'Seg' },
+            ].map(({ val, label }) => (
+              <div key={label} style={{ textAlign: 'center', background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 10, padding: '10px 14px', minWidth: 52 }}>
+                <p style={{ margin: 0, fontSize: 26, fontWeight: 900, color: '#fff', lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
+                  {String(val).padStart(2, '0')}
+                </p>
+                <p style={{ margin: '4px 0 0', fontSize: 9, fontWeight: 700, color: 'rgba(255,255,255,0.6)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>{label}</p>
+              </div>
+            ))}
+          </div>
+          {onGoToJogos && (
+            <button
+              onClick={onGoToJogos}
+              style={{
+                padding: '10px 22px', borderRadius: 10,
+                background: '#F97316', border: 'none',
+                color: '#fff', fontWeight: 800, fontSize: 12, letterSpacing: '0.1em',
+                cursor: 'pointer', whiteSpace: 'nowrap',
+                transition: 'background 0.2s',
+              }}
+              onMouseEnter={e => (e.currentTarget.style.background = '#EA580C')}
+              onMouseLeave={e => (e.currentTarget.style.background = '#F97316')}
+            >
+              FAZER PALPITES →
+            </button>
+          )}
+        </div>
+      )}
 
       {/* ── Hero match + Checklist ── */}
       <div
