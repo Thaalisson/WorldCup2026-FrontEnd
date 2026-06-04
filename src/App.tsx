@@ -397,25 +397,72 @@ function MainApp() {
         </>
       )}
 
-      {/* Pool forms */}
-      {(showCreatePool || showJoinPool) && (
-        <div style={{ background: '#FFFFFF', borderBottom: '1px solid #E5E7EB', padding: '10px 24px' }}>
-          {showCreatePool && (
-            <form onSubmit={handleCreatePool} className="pool-form" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <input placeholder={t('app.poolFormName')} value={poolName} onChange={e => setPoolName(e.target.value)} required className="input-field" style={{ maxWidth: 260, padding: '8px 12px', fontSize: 13 }} />
-              <button type="submit" className="btn-primary" style={{ width: 'auto', padding: '8px 20px', fontSize: 13 }}>{t('nav.create')}</button>
-              <button type="button" onClick={() => setShowCreatePool(false)} style={{ background: 'none', border: 'none', color: '#6B7280', cursor: 'pointer', padding: 4 }}><X style={{ width: 16, height: 16 }} /></button>
-              {poolMsg && <span style={{ color: '#EF4444', fontSize: 13 }}>{poolMsg}</span>}
+      {/* Create pool modal */}
+      {showCreatePool && (
+        <div
+          style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
+          onClick={() => { setShowCreatePool(false); setPoolMsg(''); }}
+        >
+          <div className="card" style={{ padding: 32, maxWidth: 420, width: '100%', position: 'relative' }} onClick={e => e.stopPropagation()}>
+            <button onClick={() => { setShowCreatePool(false); setPoolMsg(''); }} style={{ position: 'absolute', top: 16, right: 16, background: 'none', border: 'none', cursor: 'pointer', color: '#9CA3AF', padding: 4 }}>
+              <X size={18} />
+            </button>
+            <div style={{ width: 44, height: 44, borderRadius: 12, background: '#F9731615', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
+              <Plus size={22} color="#F97316" />
+            </div>
+            <h2 style={{ margin: '0 0 4px', fontSize: 20, fontWeight: 900, color: '#111827' }}>{t('app.createPoolCard')}</h2>
+            <p style={{ margin: '0 0 24px', fontSize: 13, color: '#6B7280' }}>{t('app.createPoolModalDesc')}</p>
+            <form onSubmit={handleCreatePool} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <div>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#374151', marginBottom: 6, letterSpacing: '0.04em' }}>{t('app.poolFormNameLabel')}</label>
+                <input
+                  placeholder={t('app.poolFormNamePlaceholder')}
+                  value={poolName}
+                  onChange={e => setPoolName(e.target.value)}
+                  required
+                  autoFocus
+                  className="input-field"
+                />
+              </div>
+              {poolMsg && <p style={{ margin: 0, fontSize: 13, color: '#EF4444', fontWeight: 600 }}>⚠ {poolMsg}</p>}
+              <button type="submit" className="btn-primary" style={{ marginTop: 4 }}>{t('app.createPoolBtn')}</button>
             </form>
-          )}
-          {showJoinPool && (
-            <form onSubmit={handleJoinPool} className="pool-form" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <input placeholder={t('app.poolFormCode')} value={inviteCode} onChange={e => setInviteCode(e.target.value.toUpperCase())} required className="input-field" style={{ maxWidth: 280, padding: '8px 12px', fontSize: 13, fontFamily: 'monospace', letterSpacing: '0.15em' }} />
-              <button type="submit" className="btn-primary" style={{ width: 'auto', padding: '8px 20px', fontSize: 13 }}>{t('nav.join')}</button>
-              <button type="button" onClick={() => setShowJoinPool(false)} style={{ background: 'none', border: 'none', color: '#6B7280', cursor: 'pointer', padding: 4 }}><X style={{ width: 16, height: 16 }} /></button>
-              {poolMsg && <span style={{ color: '#EF4444', fontSize: 13 }}>{poolMsg}</span>}
+          </div>
+        </div>
+      )}
+
+      {/* Join pool modal */}
+      {showJoinPool && (
+        <div
+          style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
+          onClick={() => { setShowJoinPool(false); setPoolMsg(''); }}
+        >
+          <div className="card" style={{ padding: 32, maxWidth: 420, width: '100%', position: 'relative' }} onClick={e => e.stopPropagation()}>
+            <button onClick={() => { setShowJoinPool(false); setPoolMsg(''); }} style={{ position: 'absolute', top: 16, right: 16, background: 'none', border: 'none', cursor: 'pointer', color: '#9CA3AF', padding: 4 }}>
+              <X size={18} />
+            </button>
+            <div style={{ width: 44, height: 44, borderRadius: 12, background: '#F3F4F6', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
+              <Hash size={22} color="#6B7280" />
+            </div>
+            <h2 style={{ margin: '0 0 4px', fontSize: 20, fontWeight: 900, color: '#111827' }}>{t('app.joinPoolCard')}</h2>
+            <p style={{ margin: '0 0 24px', fontSize: 13, color: '#6B7280' }}>{t('app.joinPoolModalDesc')}</p>
+            <form onSubmit={handleJoinPool} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <div>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#374151', marginBottom: 6, letterSpacing: '0.04em' }}>{t('app.poolFormCodeLabel')}</label>
+                <input
+                  placeholder={t('app.poolFormCode')}
+                  value={inviteCode}
+                  onChange={e => setInviteCode(e.target.value.toUpperCase())}
+                  required
+                  autoFocus
+                  className="input-field"
+                  style={{ fontFamily: 'monospace', letterSpacing: '0.2em', fontSize: 18, textAlign: 'center' }}
+                />
+              </div>
+              {poolMsg && <p style={{ margin: 0, fontSize: 13, color: '#EF4444', fontWeight: 600 }}>⚠ {poolMsg}</p>}
+              <button type="submit" className="btn-primary" style={{ marginTop: 4 }}>{t('app.joinPoolBtn')}</button>
             </form>
-          )}
+          </div>
         </div>
       )}
 
