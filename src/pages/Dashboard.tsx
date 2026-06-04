@@ -376,22 +376,20 @@ export function Dashboard({ poolId, onGoToJogos, onGoToPrecopa, onGoToGroups, on
               </div>
             ))}
           </div>
-          {onGoToJogos && (
-            <button
-              onClick={onGoToJogos}
-              style={{
-                padding: '10px 22px', borderRadius: 10,
-                background: '#F97316', border: 'none',
-                color: '#fff', fontWeight: 800, fontSize: 12, letterSpacing: '0.1em',
-                cursor: 'pointer', whiteSpace: 'nowrap',
-                transition: 'background 0.2s',
-              }}
-              onMouseEnter={e => (e.currentTarget.style.background = '#EA580C')}
-              onMouseLeave={e => (e.currentTarget.style.background = '#F97316')}
-            >
-              {t('dashboard.makeBets')}
-            </button>
-          )}
+          <button
+            onClick={hasPool ? onGoToJogos : onGoToBoloes}
+            style={{
+              padding: '10px 22px', borderRadius: 10,
+              background: '#F97316', border: 'none',
+              color: '#fff', fontWeight: 800, fontSize: 12, letterSpacing: '0.1em',
+              cursor: 'pointer', whiteSpace: 'nowrap',
+              transition: 'background 0.2s',
+            }}
+            onMouseEnter={e => (e.currentTarget.style.background = '#EA580C')}
+            onMouseLeave={e => (e.currentTarget.style.background = '#F97316')}
+          >
+            {hasPool ? t('dashboard.makeBets') : t('dashboard.createPoolFirst')}
+          </button>
         </div>
       )}
 
@@ -496,22 +494,20 @@ export function Dashboard({ poolId, onGoToJogos, onGoToPrecopa, onGoToGroups, on
                 </div>
               )}
 
-              {onGoToJogos && (
-                <button
-                  onClick={onGoToJogos}
-                  style={{
-                    width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                    padding: '12px 20px', border: 'none', borderRadius: 10,
-                    background: '#F97316', color: '#FFFFFF',
-                    fontWeight: 800, fontSize: 12, letterSpacing: '0.1em',
-                    cursor: 'pointer', transition: 'background 0.2s',
-                  }}
-                  onMouseEnter={e => (e.currentTarget.style.background = '#EA580C')}
-                  onMouseLeave={e => (e.currentTarget.style.background = '#F97316')}
-                >
-                  <Zap size={14} /> {t('dashboard.makeBetNow')}
-                </button>
-              )}
+              <button
+                onClick={hasPool ? onGoToJogos : onGoToBoloes}
+                style={{
+                  width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                  padding: '12px 20px', border: 'none', borderRadius: 10,
+                  background: '#F97316', color: '#FFFFFF',
+                  fontWeight: 800, fontSize: 12, letterSpacing: '0.1em',
+                  cursor: 'pointer', transition: 'background 0.2s',
+                }}
+                onMouseEnter={e => (e.currentTarget.style.background = '#EA580C')}
+                onMouseLeave={e => (e.currentTarget.style.background = '#F97316')}
+              >
+                <Zap size={14} /> {hasPool ? t('dashboard.makeBetNow') : t('dashboard.createPoolFirst')}
+              </button>
             </>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '48px 0', gap: 10 }}>
