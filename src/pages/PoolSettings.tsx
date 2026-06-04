@@ -1,4 +1,5 @@
-﻿import { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { apiGet, apiPut } from '../services/api';
 import { Save, Info } from 'lucide-react';
 
@@ -22,16 +23,20 @@ const DEFAULTS: ScoringConfig = {
   pointsGroupQualifier: 3,
 };
 
-const FIELDS: { key: keyof ScoringConfig; label: string; description: string }[] = [
-  { key: 'pointsExactScore',    label: 'Placar Exato',           description: 'Acertou o placar exato do jogo' },
-  { key: 'pointsCorrectResult', label: 'Resultado Correto',      description: 'Acertou o vencedor/empate (sem ser exato)' },
-  { key: 'pointsChampion',      label: 'Campeão',                description: 'Palpite de campeão correto' },
-  { key: 'pointsRunnerUp',      label: 'Vice-Campeão',           description: 'Palpite de vice-campeão correto' },
-  { key: 'pointsThirdPlace',    label: '3º Lugar',               description: 'Palpite de 3º lugar correto' },
-  { key: 'pointsGroupQualifier', label: 'Classificado no Grupo', description: 'Por cada time correto nos classificados (pré-copa)' },
-];
+function getFields(t: ReturnType<typeof import('react-i18next').useTranslation>['t']) {
+  return [
+    { key: 'pointsExactScore',     label: t('settings.fieldExactScore'),      description: t('settings.fieldExactScoreDesc') },
+    { key: 'pointsCorrectResult',  label: t('settings.fieldCorrectResult'),   description: t('settings.fieldCorrectResultDesc') },
+    { key: 'pointsChampion',       label: t('settings.fieldChampion'),        description: t('settings.fieldChampionDesc') },
+    { key: 'pointsRunnerUp',       label: t('settings.fieldRunnerUp'),        description: t('settings.fieldRunnerUpDesc') },
+    { key: 'pointsThirdPlace',     label: t('settings.fieldThirdPlace'),      description: t('settings.fieldThirdPlaceDesc') },
+    { key: 'pointsGroupQualifier', label: t('settings.fieldGroupQualifier'),  description: t('settings.fieldGroupQualifierDesc') },
+  ] as const;
+}
 
 export function PoolSettings({ poolId }: Props) {
+  const { t } = useTranslation();
+  const FIELDS = getFields(t);
   const [config, setConfig] = useState<ScoringConfig>(DEFAULTS);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -50,10 +55,10 @@ export function PoolSettings({ poolId }: Props) {
     setMsg('');
     try {
       await apiPut(`/pools/${poolId}/scoring-config`, config);
-      setMsg('Configuração salva com sucesso!');
+      setMsg(t('settings.saveSuccess'));
       setTimeout(() => setMsg(''), 3000);
     } catch {
-      setMsg('Erro ao salvar. Você é o dono deste bolão?');
+      setMsg(t('settings.saveError'));
     } finally {
       setSaving(false);
     }
@@ -67,25 +72,24 @@ export function PoolSettings({ poolId }: Props) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24, maxWidth: 640 }}>
       <div>
         <h1 style={{ margin: 0, fontSize: 30, fontWeight: 900, fontStyle: 'italic', letterSpacing: '-0.5px' }}>
-          <span style={{ color: '#111827' }}>CONFIGURAR </span>
-          <span style={{ color: '#F97316' }}>PONTUAÇÃO</span>
+          <span style={{ color: '#111827' }}>{t('settings.title')} </span>
+          <span style={{ color: '#F97316' }}>{t('settings.titleHighlight')}</span>
         </h1>
         <p style={{ margin: '6px 0 0', fontSize: 13, color: '#6B7280' }}>
-          Personalize os pontos de cada evento. Apenas o dono do bolão pode alterar.
+          {t('settings.subtitle')}
         </p>
       </div>
 
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, padding: '12px 16px', background: '#F9731610', border: '1px solid #F9731620', borderRadius: 10 }}>
         <Info size={15} color="#F97316" style={{ flexShrink: 0, marginTop: 1 }} />
         <p style={{ margin: 0, fontSize: 12, color: '#6B7280', lineHeight: 1.5 }}>
-          Pontuações com bônus (diferença de gols +3, gols casa +2, gols fora +2) são fixas e não configuráveis.
-          Alterações aqui não recalculam retroativamente — use "Recalcular Ranking" no painel admin após mudar.
+          {t('settings.infoText')}
         </p>
       </div>
 
       {loading ? (
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: '#6B7280', fontSize: 14 }}>
-          <div className="spinner" style={{ width: 18, height: 18 }} /> Carregando...
+          <div className="spinner" style={{ width: 18, height: 18 }} /> {t('common.loading')}
         </div>
       ) : (
         <form onSubmit={handleSave}>
@@ -120,11 +124,11 @@ export function PoolSettings({ poolId }: Props) {
             <div style={{ display: 'flex', gap: 10, marginTop: 24 }}>
               <button type="submit" disabled={saving}
                 style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '11px 24px', background: '#F97316', border: 'none', borderRadius: 9, color: '#F9FAFB', fontSize: 12, fontWeight: 800, letterSpacing: '0.08em', cursor: 'pointer', opacity: saving ? 0.6 : 1 }}>
-                <Save size={14} /> {saving ? 'SALVANDO...' : 'SALVAR CONFIGURAÇÃO'}
+                <Save size={14} /> {saving ? t('settings.saving') : t('settings.saveBtn')}
               </button>
               <button type="button" onClick={handleReset}
                 style={{ padding: '11px 20px', background: 'none', border: '1px solid #E5E7EB', borderRadius: 9, color: '#6B7280', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
-                Restaurar Padrão
+                {t('settings.resetBtn')}
               </button>
             </div>
 

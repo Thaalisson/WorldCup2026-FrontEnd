@@ -1,4 +1,5 @@
-﻿import { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { RankingTable } from '../components/RankingTable';
 import { apiGet } from '../services/api';
 import type { RankingItem } from '../types';
@@ -6,6 +7,7 @@ import type { RankingItem } from '../types';
 type Props = { poolId: string };
 
 export function Ranking({ poolId }: Props) {
+  const { t } = useTranslation();
   const [items, setItems] = useState<RankingItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -14,7 +16,7 @@ export function Ranking({ poolId }: Props) {
     setLoading(true);
     apiGet<RankingItem[]>(`/pools/${poolId}/ranking`)
       .then(setItems)
-      .catch(() => setError('Não foi possível carregar o ranking.'))
+      .catch(() => setError(t('ranking.loadError')))
       .finally(() => setLoading(false));
   }, [poolId]);
 
@@ -22,12 +24,12 @@ export function Ranking({ poolId }: Props) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       <div>
         <h1 style={{ margin: 0, fontSize: 28, fontWeight: 900, fontStyle: 'italic', letterSpacing: '-0.5px' }}>
-          <span style={{ color: '#111827' }}>RANKING </span>
-          <span style={{ color: '#F97316' }}>DO BOLÃO</span>
+          <span style={{ color: '#111827' }}>{t('ranking.title')}</span>
+          <span style={{ color: '#F97316' }}>{t('ranking.titleHighlight')}</span>
         </h1>
         {items.length > 0 && (
           <p style={{ margin: '6px 0 0', fontSize: 13, color: '#6B7280' }}>
-            {items.length} participante{items.length !== 1 ? 's' : ''} · atualizado em tempo real
+            {t('ranking.subtitle', { count: items.length })}
           </p>
         )}
       </div>
@@ -35,7 +37,7 @@ export function Ranking({ poolId }: Props) {
       {loading && (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 240, flexDirection: 'column', gap: 12, color: '#D1D5DB' }}>
           <div className="spinner" />
-          <span style={{ fontSize: 13, color: '#6B7280' }}>Carregando ranking...</span>
+          <span style={{ fontSize: 13, color: '#6B7280' }}>{t('ranking.loading')}</span>
         </div>
       )}
       {error && <div className="card" style={{ padding: 20, color: '#EF4444', fontSize: 14, textAlign: 'center' }}>{error}</div>}

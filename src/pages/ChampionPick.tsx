@@ -1,4 +1,5 @@
-﻿import { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { apiGet, apiPost } from '../services/api';
 import type { ChampionPrediction, Team } from '../types';
 import { Trophy, Medal, Star } from 'lucide-react';
@@ -18,13 +19,13 @@ function useLockCDDown() {
     const m = Math.floor((diff % 3600000) / 60000);
     return { d, h, m };
   }
-  const [t, setT] = useState(calc);
+  const [countdown, setCountdown] = useState(calc);
   useEffect(() => {
-    setT(calc());
-    const id = setInterval(() => setT(calc()), 60000);
+    setCountdown(calc());
+    const id = setInterval(() => setCountdown(calc()), 60000);
     return () => clearInterval(id);
   }, []);
-  return t;
+  return countdown;
 }
 
 function FlagImg({ isoCode, name }: { isoCode?: string; name: string }) {
@@ -52,7 +53,8 @@ function TeamSelect({
   teams: Team[];
   disabled: boolean;
 }) {
-  const selected = teams.find(t => t.id === value);
+  const { t } = useTranslation();
+  const selected = teams.find(team => team.id === value);
   return (
     <div className="card" style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 12 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -87,10 +89,10 @@ function TeamSelect({
           opacity: disabled ? 0.6 : 1,
         }}
       >
-        <option value="">— Escolher seleção —</option>
-        {teams.map(t => (
-          <option key={t.id} value={t.id}>
-            {t.groupName ? `Grupo ${t.groupName} — ` : ''}{t.name}
+        <option value="">{t('champion.chooseTeam')}</option>
+        {teams.map(team => (
+          <option key={team.id} value={team.id}>
+            {team.groupName ? t('champion.groupPrefix', { group: team.groupName }) : ''}{team.name}
           </option>
         ))}
       </select>
@@ -99,6 +101,7 @@ function TeamSelect({
 }
 
 export function ChampionPick({ poolId }: Props) {
+  const { t } = useTranslation();
   const [teams, setTeams] = useState<Team[]>([]);
   const [champion, setChampion] = useState('');
   const [runnerUp, setRunnerUp] = useState('');
@@ -124,7 +127,7 @@ export function ChampionPick({ poolId }: Props) {
           setSaveState('saved');
         }
       })
-      .catch(() => setError('Não foi possível carregar os dados.'))
+      .catch(() => setError(t('champion.loadError')))
       .finally(() => setLoading(false));
   }, [poolId]);
 
@@ -148,7 +151,7 @@ export function ChampionPick({ poolId }: Props) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: 280, gap: 12 }}>
         <div className="spinner" />
-        <span style={{ fontSize: 13, color: '#6B7280' }}>Carregando...</span>
+        <span style={{ fontSize: 13, color: '#6B7280' }}>{t('performance.loading')}</span>
       </div>
     );
   }
@@ -160,11 +163,11 @@ export function ChampionPick({ poolId }: Props) {
       {/* Header */}
       <div>
         <h1 style={{ margin: 0, fontSize: 28, fontWeight: 900, fontStyle: 'italic', letterSpacing: '-0.5px' }}>
-          <span style={{ color: '#111827' }}>PRÉ-</span>
-          <span style={{ color: '#F97316' }}>COPA</span>
+          <span style={{ color: '#111827' }}>{t('champion.title')}</span>
+          <span style={{ color: '#F97316' }}>{t('champion.titleHighlight')}</span>
         </h1>
         <p style={{ margin: '6px 0 0', fontSize: 13, color: '#6B7280' }}>
-          Palpite de campeão, vice e 3º lugar. Pontuação extra ao final do torneio.
+          {t('champion.subtitle')}
         </p>
       </div>
 
@@ -183,17 +186,17 @@ export function ChampionPick({ poolId }: Props) {
         }}>
           <div>
             <p style={{ margin: 0, fontSize: 11, fontWeight: 800, color: lockCountdown.d <= 3 ? '#EF4444' : '#F97316', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
-              ⏳ Palpites bloqueiam em:
+              {t('champion.lockingIn')}
             </p>
             <p style={{ margin: '3px 0 0', fontSize: 12, color: '#6B7280' }}>
-              11 jun às 12h00 UTC — Aproveite enquanto pode!
+              {t('champion.lockDate')}
             </p>
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
             {[
-              { val: lockCountdown.d, label: 'dias' },
-              { val: lockCountdown.h, label: 'horas' },
-              { val: lockCountdown.m, label: 'min' },
+              { val: lockCountdown.d, label: t('common.daysLower') },
+              { val: lockCountdown.h, label: t('common.hoursLower') },
+              { val: lockCountdown.m, label: t('common.minLower') },
             ].map(({ val, label }) => (
               <div key={label} style={{ textAlign: 'center', background: '#fff', border: '1px solid #E5E7EB', borderRadius: 8, padding: '6px 12px', minWidth: 44 }}>
                 <p style={{ margin: 0, fontSize: 20, fontWeight: 900, color: lockCountdown.d <= 3 ? '#EF4444' : '#F97316', lineHeight: 1 }}>{val}</p>
@@ -206,16 +209,16 @@ export function ChampionPick({ poolId }: Props) {
 
       {isLocked && (
         <div style={{ background: '#EF444415', border: '1px solid #EF444430', borderRadius: 10, padding: '12px 16px', fontSize: 13, color: '#EF4444', fontWeight: 600 }}>
-          🔒 Torneio em andamento — palpites de campeão bloqueados.
+          {t('champion.locked')}
         </div>
       )}
 
       {/* Scoring info */}
       <div className="card-soft" style={{ padding: 16, display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, textAlign: 'center' }}>
         {[
-          { label: 'Campeão acertado', pts: '+15', color: '#D97706' },
-          { label: 'Vice acertado', pts: '+10', color: '#6B7280' },
-          { label: '3º Lugar acertado', pts: '+5', color: '#CD7C2F' },
+          { label: t('champion.championCorrect'), pts: '+15', color: '#D97706' },
+          { label: t('champion.runnerUpCorrect'), pts: '+10', color: '#6B7280' },
+          { label: t('champion.thirdCorrect'), pts: '+5', color: '#CD7C2F' },
         ].map(item => (
           <div key={item.label}>
             <p style={{ margin: 0, fontSize: 20, fontWeight: 900, color: item.color }}>{item.pts}</p>
@@ -226,7 +229,7 @@ export function ChampionPick({ poolId }: Props) {
 
       {/* Team pickers */}
       <TeamSelect
-        label="Campeão"
+        label={t('champion.champion')}
         icon={<Trophy size={18} />}
         color="#D97706"
         value={champion}
@@ -235,7 +238,7 @@ export function ChampionPick({ poolId }: Props) {
         disabled={isLocked}
       />
       <TeamSelect
-        label="Vice-Campeão"
+        label={t('champion.runnerUp')}
         icon={<Medal size={18} />}
         color="#6B7280"
         value={runnerUp}
@@ -244,7 +247,7 @@ export function ChampionPick({ poolId }: Props) {
         disabled={isLocked}
       />
       <TeamSelect
-        label="3º Lugar"
+        label={t('champion.thirdPlace')}
         icon={<Star size={18} />}
         color="#CD7C2F"
         value={thirdPlace}
@@ -261,12 +264,12 @@ export function ChampionPick({ poolId }: Props) {
           className="btn-primary"
           style={{ opacity: (!champion || saveState === 'saving') ? 0.5 : 1 }}
         >
-          {saveState === 'saving' ? 'SALVANDO...' : saveState === 'saved' ? '✓ PALPITE SALVO' : 'SALVAR PALPITE PRÉ-COPA'}
+          {saveState === 'saving' ? t('champion.saving') : saveState === 'saved' ? t('champion.saved') : t('champion.saveBtn')}
         </button>
       )}
 
       {saveState === 'error' && (
-        <p style={{ margin: 0, fontSize: 12, color: '#EF4444', textAlign: 'center' }}>Erro ao salvar. Tente novamente.</p>
+        <p style={{ margin: 0, fontSize: 12, color: '#EF4444', textAlign: 'center' }}>{t('champion.saveError')}</p>
       )}
     </div>
   );

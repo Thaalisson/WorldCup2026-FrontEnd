@@ -1,4 +1,5 @@
 ﻿import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { apiGet, apiPost } from '../services/api';
 import type { Team } from '../types';
 import { CheckCircle, Lock } from 'lucide-react';
@@ -17,6 +18,7 @@ type SavedPick = {
 };
 
 export function GroupPredictions({ poolId }: Props) {
+  const { t } = useTranslation();
   const [teams, setTeams] = useState<Team[]>([]);
   const [saved, setSaved] = useState<Record<string, SavedPick>>({});
   const [picks, setPicks] = useState<Record<string, GroupPick>>({});
@@ -82,27 +84,27 @@ export function GroupPredictions({ poolId }: Props) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
       <div>
         <h1 style={{ margin: 0, fontSize: 30, fontWeight: 900, fontStyle: 'italic', letterSpacing: '-0.5px' }}>
-          <span style={{ color: '#111827' }}>CLASSIFICADOS </span>
-          <span style={{ color: '#F97316' }}>POR GRUPO</span>
+          <span style={{ color: '#111827' }}>{t('groupPredictions.title')}</span>
+          <span style={{ color: '#F97316' }}>{t('groupPredictions.titleHighlight')}</span>
         </h1>
         <p style={{ margin: '6px 0 0', fontSize: 13, color: '#6B7280' }}>
-          Escolha os 2 classificados de cada grupo. Vale {3} ponto{3 !== 1 ? 's' : ''} por acerto.
+          {t('groupPredictions.subtitle', { pts: 3, s: 's' })}
         </p>
       </div>
 
       {isLocked && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 16px', borderRadius: 10, background: '#EF444418', border: '1px solid #EF444440', color: '#EF4444', fontSize: 13, fontWeight: 600 }}>
-          <Lock size={15} /> Palpites bloqueados — torneio já iniciado.
+          <Lock size={15} /> {t('groupPredictions.locked')}
         </div>
       )}
 
       {!poolId ? (
         <div style={{ textAlign: 'center', padding: '60px 0', color: '#6B7280' }}>
-          <p style={{ fontSize: 14 }}>Selecione um bolão para fazer seus palpites de grupos.</p>
+          <p style={{ fontSize: 14 }}>{t('groupPredictions.noPool')}</p>
         </div>
       ) : loading ? (
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: '#6B7280', fontSize: 14 }}>
-          <div className="spinner" style={{ width: 18, height: 18 }} /> Carregando grupos...
+          <div className="spinner" style={{ width: 18, height: 18 }} /> {t('groupPredictions.loading')}
         </div>
       ) : (
         <div className="group-predictions-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 320px), 1fr))', gap: 16 }}>
@@ -117,7 +119,7 @@ export function GroupPredictions({ poolId }: Props) {
               <div key={group} className="card" style={{ padding: 20 }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
                   <p style={{ margin: 0, fontSize: 11, fontWeight: 800, color: '#F97316', textTransform: 'uppercase', letterSpacing: '0.14em' }}>
-                    Grupo {group}
+                    {t('common.group')} {group}
                   </p>
                   {pts > 0 && (
                     <span style={{ fontSize: 11, fontWeight: 800, color: '#22C55E', background: '#22C55E18', padding: '2px 8px', borderRadius: 20 }}>
@@ -138,26 +140,26 @@ export function GroupPredictions({ poolId }: Props) {
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   <div>
-                    <label style={{ fontSize: 10, color: '#6B7280', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', display: 'block', marginBottom: 4 }}>1º Lugar</label>
+                    <label style={{ fontSize: 10, color: '#6B7280', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', display: 'block', marginBottom: 4 }}>{t('groupPredictions.firstPlace')}</label>
                     <select
                       value={pick.firstPlaceTeamId}
                       disabled={isLocked}
                       onChange={e => setPicks(p => ({ ...p, [group]: { ...getPick(group), firstPlaceTeamId: e.target.value } }))}
                       style={selectStyle(isLocked)}
                     >
-                      <option value="">Escolher time...</option>
+                      <option value="">{t('groupPredictions.chooseTeam')}</option>
                       {groupTeams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
                     </select>
                   </div>
                   <div>
-                    <label style={{ fontSize: 10, color: '#6B7280', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', display: 'block', marginBottom: 4 }}>2º Lugar</label>
+                    <label style={{ fontSize: 10, color: '#6B7280', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', display: 'block', marginBottom: 4 }}>{t('groupPredictions.secondPlace')}</label>
                     <select
                       value={pick.secondPlaceTeamId}
                       disabled={isLocked}
                       onChange={e => setPicks(p => ({ ...p, [group]: { ...getPick(group), secondPlaceTeamId: e.target.value } }))}
                       style={selectStyle(isLocked)}
                     >
-                      <option value="">Escolher time...</option>
+                      <option value="">{t('groupPredictions.chooseTeam')}</option>
                       {groupTeams.filter(t => t.id !== pick.firstPlaceTeamId).map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
                     </select>
                   </div>
@@ -177,7 +179,7 @@ export function GroupPredictions({ poolId }: Props) {
                         transition: 'background 0.2s',
                       }}
                     >
-                      {ok ? <><CheckCircle size={13} /> SALVO!</> : busy ? 'SALVANDO...' : 'SALVAR PALPITE'}
+                      {ok ? <><CheckCircle size={13} /> {t('groupPredictions.saved')}</> : busy ? t('groupPredictions.saving') : t('groupPredictions.saveBet')}
                     </button>
                   )}
                 </div>

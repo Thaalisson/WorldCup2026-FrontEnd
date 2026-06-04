@@ -1,4 +1,5 @@
-﻿import { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { AreaChart, Area, ResponsiveContainer, Tooltip, XAxis } from 'recharts';
 import { apiGet } from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -66,13 +67,13 @@ function StatPill({
   );
 }
 
-function timeAgo(isoString: string): string {
+function timeAgo(isoString: string, t: (key: string, opts?: Record<string, unknown>) => string): string {
   const s = isoString.endsWith('Z') ? isoString : isoString + 'Z';
   const diff = Math.floor((Date.now() - new Date(s).getTime()) / 1000);
-  if (diff < 60) return 'agora';
-  if (diff < 3600) return `há ${Math.floor(diff / 60)}min`;
-  if (diff < 86400) return `há ${Math.floor(diff / 3600)}h`;
-  return `há ${Math.floor(diff / 86400)}d`;
+  if (diff < 60) return t('common.now');
+  if (diff < 3600) return t('common.minutesAgo', { count: Math.floor(diff / 60) });
+  if (diff < 86400) return t('common.hoursAgo', { count: Math.floor(diff / 3600) });
+  return t('common.daysAgo', { count: Math.floor(diff / 86400) });
 }
 
 function SkeletonStatPill() {
@@ -130,12 +131,6 @@ function useCopaCDDown() {
   return t;
 }
 
-const EVENT_STYLE = {
-  1: { bg: '#22C55E18', color: '#22C55E', label: 'EXATO', icon: '🎯' },
-  2: { bg: '#F9731618', color: '#F97316', label: 'CERTO', icon: '✓' },
-  3: { bg: '#6B728018', color: '#6B7280', label: 'ZERO', icon: '○' },
-} as const;
-
 function FootballPitch() {
   return (
     <svg
@@ -177,6 +172,7 @@ function FootballPitch() {
 }
 
 export function Dashboard({ poolId, onGoToJogos, onGoToPrecopa, onGoToGroups, onGoToBoloes }: Props) {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const [ranking, setRanking] = useState<RankingItem[]>([]);
   const [matches, setMatches] = useState<Match[]>([]);
@@ -186,6 +182,12 @@ export function Dashboard({ poolId, onGoToJogos, onGoToPrecopa, onGoToGroups, on
   const [champion, setChampion] = useState<ChampionPrediction | null>(null);
   const [loadingR, setLoadingR] = useState(false);
   const [loadingM, setLoadingM] = useState(true);
+
+  const EVENT_STYLE = {
+    1: { bg: '#22C55E18', color: '#22C55E', label: t('dashboard.eventExact'), icon: '🎯' },
+    2: { bg: '#F9731618', color: '#F97316', label: t('dashboard.eventCorrect'), icon: '✓' },
+    3: { bg: '#6B728018', color: '#6B7280', label: t('dashboard.eventWrong'), icon: '○' },
+  } as const;
 
   useEffect(() => {
     apiGet<Match[]>('/matches')
@@ -245,29 +247,29 @@ export function Dashboard({ poolId, onGoToJogos, onGoToPrecopa, onGoToGroups, on
   const checklist = [
     {
       done: hasChampion,
-      label: 'Definir campeão',
-      sub: hasChampion ? championName! : 'Antes de 11 jun',
+      label: t('dashboard.checklistChampion'),
+      sub: hasChampion ? championName! : t('dashboard.checklistChampionSub'),
       action: onGoToPrecopa,
       urgent: !hasChampion,
     },
     {
       done: doneCount > 0 && doneCount >= totalMatches && totalMatches > 0,
-      label: 'Palpitar todos os jogos',
-      sub: hasPool ? `${doneCount}/${totalMatches || '?'} feitos` : 'Selecione um bolão',
+      label: t('dashboard.checklistBets'),
+      sub: hasPool ? t('dashboard.checklistBetsSub', { done: doneCount, total: totalMatches || '?' }) : t('common.selectPool'),
       action: onGoToJogos,
       urgent: pendingCount > 20,
     },
     {
       done: false,
-      label: 'Definir classificados por grupo',
-      sub: 'Antes de 11 jun',
+      label: t('dashboard.checklistGroups'),
+      sub: t('dashboard.checklistGroupsSub'),
       action: onGoToGroups,
       urgent: false,
     },
     {
       done: false,
-      label: 'Convidar amigos para o bolão',
-      sub: 'Quanto mais, melhor!',
+      label: t('dashboard.checklistInvite'),
+      sub: t('dashboard.checklistInviteSub'),
       action: onGoToBoloes,
       urgent: false,
     },
@@ -279,14 +281,14 @@ export function Dashboard({ poolId, onGoToJogos, onGoToPrecopa, onGoToGroups, on
       {/* ── Header ── */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
         <div>
-          <p style={{ margin: 0, fontSize: 11, color: '#6B7280', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Bem-vindo de volta 👋</p>
+          <p style={{ margin: 0, fontSize: 11, color: '#6B7280', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase' }}>{t('dashboard.welcome')}</p>
           <h1 style={{ margin: '4px 0 0', fontSize: 30, fontWeight: 900, fontStyle: 'italic', letterSpacing: '-0.5px', lineHeight: 1 }}>
             <span style={{ color: '#111827' }}>{user?.name?.split(' ')[0].toUpperCase() ?? 'JOGADOR'}</span>
           </h1>
         </div>
         <div style={{ background: '#D9770610', border: '1px solid #D9770630', borderRadius: 10, padding: '8px 16px' }}>
-          <p style={{ margin: 0, fontSize: 9, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Torneio</p>
-          <p style={{ margin: 0, fontSize: 12, fontWeight: 800, color: '#D97706', letterSpacing: '0.06em' }}>Copa do Mundo 2026</p>
+          <p style={{ margin: 0, fontSize: 9, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.12em' }}>{t('dashboard.tournamentLabel')}</p>
+          <p style={{ margin: 0, fontSize: 12, fontWeight: 800, color: '#D97706', letterSpacing: '0.06em' }}>{t('dashboard.tournamentName')}</p>
         </div>
       </div>
 
@@ -301,39 +303,39 @@ export function Dashboard({ poolId, onGoToJogos, onGoToPrecopa, onGoToGroups, on
           <>
             <StatPill
               icon={<Star size={17} />}
-              label="Pontuação"
+              label={t('dashboard.statScore')}
               value={hasPool ? (myStats?.totalPoints ?? 0) : '—'}
-              sub={myStats ? `${myStats.exactScores} placares exatos` : (hasPool ? 'Sem pontos ainda' : 'Selecione um bolão')}
+              sub={myStats ? t('dashboard.exactScores', { count: myStats?.exactScores ?? 0 }) : (hasPool ? t('dashboard.noPoints') : t('common.selectPool'))}
               color="#D97706" bg="#D9770610"
             />
             <StatPill
               icon={<Trophy size={17} />}
-              label="Posição"
+              label={t('dashboard.statPosition')}
               value={myStats ? `${myStats.position}º` : '—'}
-              sub={myStats && ranking.length > 0 ? `de ${ranking.length} participante${ranking.length !== 1 ? 's' : ''}` : 'Sem ranking'}
+              sub={myStats && ranking.length > 0 ? t('dashboard.rankingOf', { count: ranking.length }) : t('dashboard.noRanking')}
               color="#F97316" bg="#F9731610"
             />
             <StatPill
               icon={<Target size={17} />}
-              label="Palpites Feitos"
+              label={t('dashboard.statBets')}
               value={hasPool ? `${doneCount}` : '—'}
-              sub={hasPool && totalMatches > 0 ? `de ${totalMatches} jogos · ${donePct}%` : 'Selecione um bolão'}
+              sub={hasPool && totalMatches > 0 ? t('dashboard.betsOf', { total: totalMatches || '?', pct: donePct }) : t('common.selectPool')}
               color="#22C55E" bg="#22C55E10"
               onClick={onGoToJogos}
             />
             <StatPill
               icon={<AlertCircle size={17} />}
-              label="Pendentes"
+              label={t('dashboard.statPending')}
               value={hasPool ? pendingCount : '—'}
-              sub={hasPool ? (pendingCount > 0 ? 'palpites em aberto' : 'Tudo em dia! 🎉') : 'Selecione um bolão'}
+              sub={hasPool ? (pendingCount > 0 ? t('dashboard.pendingOpen') : t('dashboard.allDone')) : t('common.selectPool')}
               color={pendingCount > 0 ? '#F97316' : '#22C55E'} bg={pendingCount > 0 ? '#F9731610' : '#22C55E10'}
               onClick={onGoToJogos}
             />
             <StatPill
               icon={<Award size={17} />}
-              label="Campeão"
+              label={t('dashboard.statChampion')}
               value={hasPool ? championCode : '—'}
-              sub={hasPool ? (hasChampion ? championName! : 'Não definido ainda') : 'Selecione um bolão'}
+              sub={hasPool ? (hasChampion ? championName! : t('dashboard.noChampion')) : t('common.selectPool')}
               color={hasChampion ? '#A855F7' : '#F97316'} bg={hasChampion ? '#A855F710' : '#F9731610'}
               onClick={onGoToPrecopa}
             />
@@ -355,16 +357,16 @@ export function Dashboard({ poolId, onGoToJogos, onGoToPrecopa, onGoToGroups, on
           gap: 16,
         }}>
           <div>
-            <p style={{ margin: 0, fontSize: 10, fontWeight: 800, color: 'rgba(255,255,255,0.65)', letterSpacing: '0.14em', textTransform: 'uppercase' }}>Copa do Mundo 2026</p>
-            <h2 style={{ margin: '4px 0 2px', fontSize: 20, fontWeight: 900, color: '#fff', fontStyle: 'italic' }}>🏆 A Copa começa em:</h2>
-            <p style={{ margin: 0, fontSize: 12, color: 'rgba(255,255,255,0.7)' }}>11 de junho · Los Angeles, Nova York, Cidade do México</p>
+            <p style={{ margin: 0, fontSize: 10, fontWeight: 800, color: 'rgba(255,255,255,0.65)', letterSpacing: '0.14em', textTransform: 'uppercase' }}>{t('dashboard.copaTitle')}</p>
+            <h2 style={{ margin: '4px 0 2px', fontSize: 20, fontWeight: 900, color: '#fff', fontStyle: 'italic' }}>{t('dashboard.copaCountdownTitle')}</h2>
+            <p style={{ margin: 0, fontSize: 12, color: 'rgba(255,255,255,0.7)' }}>{t('dashboard.copaCountdownSub')}</p>
           </div>
           <div style={{ display: 'flex', gap: 10 }}>
             {[
-              { val: copaCountdown.d, label: 'Dias' },
-              { val: copaCountdown.h, label: 'Horas' },
-              { val: copaCountdown.m, label: 'Min' },
-              { val: copaCountdown.s, label: 'Seg' },
+              { val: copaCountdown.d, label: t('common.days') },
+              { val: copaCountdown.h, label: t('common.hours') },
+              { val: copaCountdown.m, label: t('common.min') },
+              { val: copaCountdown.s, label: t('common.sec') },
             ].map(({ val, label }) => (
               <div key={label} style={{ textAlign: 'center', background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 10, padding: '10px 14px', minWidth: 52 }}>
                 <p style={{ margin: 0, fontSize: 26, fontWeight: 900, color: '#fff', lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
@@ -387,7 +389,7 @@ export function Dashboard({ poolId, onGoToJogos, onGoToPrecopa, onGoToGroups, on
               onMouseEnter={e => (e.currentTarget.style.background = '#EA580C')}
               onMouseLeave={e => (e.currentTarget.style.background = '#F97316')}
             >
-              FAZER PALPITES →
+              {t('dashboard.makeBets')}
             </button>
           )}
         </div>
@@ -413,7 +415,7 @@ export function Dashboard({ poolId, onGoToJogos, onGoToPrecopa, onGoToGroups, on
 
           <div style={{ position: 'relative', zIndex: 1 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
-              <p style={{ margin: 0, fontSize: 10, fontWeight: 800, color: 'rgba(255,255,255,0.6)', textTransform: 'uppercase', letterSpacing: '0.14em' }}>Próximo Jogo</p>
+              <p style={{ margin: 0, fontSize: 10, fontWeight: 800, color: 'rgba(255,255,255,0.6)', textTransform: 'uppercase', letterSpacing: '0.14em' }}>{t('dashboard.nextMatch')}</p>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 {nextMatch && nextMatchCountdown && (
                   <span style={{
@@ -425,15 +427,15 @@ export function Dashboard({ poolId, onGoToJogos, onGoToPrecopa, onGoToGroups, on
                   }}>
                     <Clock size={9} />
                     {nextMatchCountdown.d > 0
-                      ? `Em ${nextMatchCountdown.d}d ${nextMatchCountdown.h}h`
+                      ? t('common.countdownDaysHours', { d: nextMatchCountdown.d, h: nextMatchCountdown.h })
                       : nextMatchCountdown.h > 0
-                      ? `Em ${nextMatchCountdown.h}h ${nextMatchCountdown.m}min`
-                      : `Em ${nextMatchCountdown.m}min`}
+                      ? t('common.countdownHoursMin', { h: nextMatchCountdown.h, m: nextMatchCountdown.m })
+                      : t('common.countdownMin', { m: nextMatchCountdown.m })}
                   </span>
                 )}
                 {nextMatch?.groupName && (
                   <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.12em', padding: '3px 10px', borderRadius: 20, background: 'rgba(217,119,6,0.3)', color: '#FCD34D', border: '1px solid rgba(217,119,6,0.5)' }}>
-                    GRUPO {nextMatch.groupName}
+                    {t('dashboard.groupBadge', { name: nextMatch.groupName })}
                   </span>
                 )}
               </div>
@@ -441,7 +443,7 @@ export function Dashboard({ poolId, onGoToJogos, onGoToPrecopa, onGoToGroups, on
 
           {loadingM ? (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, color: 'rgba(255,255,255,0.6)', fontSize: 13, padding: '48px 0' }}>
-              <div className="spinner" style={{ width: 18, height: 18, borderColor: 'rgba(255,255,255,0.4)', borderTopColor: 'transparent' }} /> Carregando jogos...
+              <div className="spinner" style={{ width: 18, height: 18, borderColor: 'rgba(255,255,255,0.4)', borderTopColor: 'transparent' }} /> {t('common.loadingMatches')}
             </div>
           ) : nextMatch ? (
             <>
@@ -489,8 +491,8 @@ export function Dashboard({ poolId, onGoToJogos, onGoToPrecopa, onGoToGroups, on
                   backdropFilter: 'blur(4px)',
                 }}>
                   <Target size={13} color="#FCD34D" style={{ flexShrink: 0 }} />
-                  <span style={{ flex: 1, fontSize: 12, color: 'rgba(255,255,255,0.7)' }}>Você ainda não palpitou neste jogo.</span>
-                  <span style={{ fontSize: 11, fontWeight: 800, color: '#FCD34D' }}>Palpitar →</span>
+                  <span style={{ flex: 1, fontSize: 12, color: 'rgba(255,255,255,0.7)' }}>{t('dashboard.notBetYet')}</span>
+                  <span style={{ fontSize: 11, fontWeight: 800, color: '#FCD34D' }}>{t('dashboard.betNow')}</span>
                 </div>
               )}
 
@@ -507,15 +509,15 @@ export function Dashboard({ poolId, onGoToJogos, onGoToPrecopa, onGoToGroups, on
                   onMouseEnter={e => (e.currentTarget.style.background = '#EA580C')}
                   onMouseLeave={e => (e.currentTarget.style.background = '#F97316')}
                 >
-                  <Zap size={14} /> FAZER PALPITE AGORA
+                  <Zap size={14} /> {t('dashboard.makeBetNow')}
                 </button>
               )}
             </>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '48px 0', gap: 10 }}>
               <div style={{ fontSize: 44, opacity: 0.4 }}>⚽</div>
-              <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: 'rgba(255,255,255,0.9)' }}>Nenhum jogo disponível</p>
-              <p style={{ margin: 0, fontSize: 12, color: 'rgba(255,255,255,0.6)' }}>Todos os palpites estão em dia!</p>
+              <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: 'rgba(255,255,255,0.9)' }}>{t('dashboard.noMatchAvailable')}</p>
+              <p style={{ margin: 0, fontSize: 12, color: 'rgba(255,255,255,0.6)' }}>{t('dashboard.allBetsDone')}</p>
             </div>
           )}
           </div>{/* /zIndex wrapper */}
@@ -523,7 +525,7 @@ export function Dashboard({ poolId, onGoToJogos, onGoToPrecopa, onGoToGroups, on
 
         {/* Action Checklist */}
         <div className="card" style={{ padding: 20 }}>
-          <p className="section-label">Sua Lista de Ações</p>
+          <p className="section-label">{t('dashboard.checklistTitle')}</p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {checklist.map((item, i) => (
               <div
@@ -576,16 +578,16 @@ export function Dashboard({ poolId, onGoToJogos, onGoToPrecopa, onGoToGroups, on
         <div className="card" style={{ padding: 20 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 18 }}>
             <BarChart2 size={13} color="#F97316" />
-            <p className="section-label" style={{ margin: 0 }}>Progresso</p>
+            <p className="section-label" style={{ margin: 0 }}>{t('dashboard.progressTitle')}</p>
           </div>
 
           {!hasPool ? (
-            <p style={{ fontSize: 13, color: '#6B7280' }}>Selecione um bolão para ver seu progresso.</p>
+            <p style={{ fontSize: 13, color: '#6B7280' }}>{t('dashboard.noPoolProgress')}</p>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 7 }}>
-                  <span style={{ fontSize: 11, color: '#6B7280' }}>Palpites realizados</span>
+                  <span style={{ fontSize: 11, color: '#6B7280' }}>{t('dashboard.betsCompleted')}</span>
                   <span style={{ fontSize: 11, fontWeight: 800, color: '#F97316' }}>{doneCount}/{totalMatches || '?'}</span>
                 </div>
                 <div style={{ height: 7, background: '#E5E7EB', borderRadius: 4, overflow: 'hidden' }}>
@@ -597,14 +599,14 @@ export function Dashboard({ poolId, onGoToJogos, onGoToPrecopa, onGoToGroups, on
                     transition: 'width 0.6s ease',
                   }} />
                 </div>
-                <p style={{ margin: '5px 0 0', fontSize: 10, color: '#9CA3AF' }}>{donePct}% completo</p>
+                <p style={{ margin: '5px 0 0', fontSize: 10, color: '#9CA3AF' }}>{t('dashboard.completePct', { pct: donePct })}</p>
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingTop: 4, borderTop: '1px solid #E5E7EB' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                     <Trophy size={12} color={hasChampion ? '#22C55E' : '#F97316'} />
-                    <span style={{ fontSize: 12, color: '#6B7280' }}>Campeão</span>
+                    <span style={{ fontSize: 12, color: '#6B7280' }}>{t('dashboard.statChampion')}</span>
                   </div>
                   {hasChampion ? (
                     <span style={{ fontSize: 10, fontWeight: 700, color: '#22C55E', background: '#22C55E10', padding: '2px 8px', borderRadius: 20 }}>
@@ -612,20 +614,20 @@ export function Dashboard({ poolId, onGoToJogos, onGoToPrecopa, onGoToGroups, on
                     </span>
                   ) : (
                     <span style={{ fontSize: 10, fontWeight: 700, color: '#F97316', background: '#F9731610', padding: '2px 8px', borderRadius: 20 }}>
-                      Pendente
+                      {t('dashboard.pending')}
                     </span>
                   )}
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                     <Users size={12} color="#6B7280" />
-                    <span style={{ fontSize: 12, color: '#6B7280' }}>Grupos</span>
+                    <span style={{ fontSize: 12, color: '#6B7280' }}>{t('nav.groups')}</span>
                   </div>
                   <button
                     onClick={onGoToGroups}
                     style={{ fontSize: 10, fontWeight: 700, color: '#F97316', background: 'none', border: 'none', cursor: onGoToGroups ? 'pointer' : 'default', padding: 0 }}
                   >
-                    Ver GRUPOS →
+                    {t('dashboard.groupsLink')}
                   </button>
                 </div>
               </div>
@@ -637,8 +639,8 @@ export function Dashboard({ poolId, onGoToJogos, onGoToPrecopa, onGoToGroups, on
         <div className="card" style={{ padding: 20 }}>
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16 }}>
             <div>
-              <p className="section-label" style={{ margin: 0 }}>Evolução de Pontos</p>
-              <p style={{ margin: '4px 0 0', fontSize: 11, color: '#9CA3AF' }}>Seu progresso ao longo da Copa</p>
+              <p className="section-label" style={{ margin: 0 }}>{t('dashboard.evolutionTitle')}</p>
+              <p style={{ margin: '4px 0 0', fontSize: 11, color: '#9CA3AF' }}>{t('dashboard.evolutionSub')}</p>
             </div>
             <span style={{ fontSize: 11, color: '#F97316', fontWeight: 700, flexShrink: 0 }}>2026</span>
           </div>
@@ -646,16 +648,16 @@ export function Dashboard({ poolId, onGoToJogos, onGoToPrecopa, onGoToGroups, on
           {!hasPool ? (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: 140, gap: 8, color: '#6B7280' }}>
               <TrendingUp size={30} opacity={0.25} />
-              <p style={{ margin: 0, fontSize: 12 }}>Selecione um bolão</p>
+              <p style={{ margin: 0, fontSize: 12 }}>{t('dashboard.noPoolChart')}</p>
             </div>
           ) : !chartData ? (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: 140, gap: 8, color: '#6B7280' }}>
               <TrendingUp size={30} opacity={0.25} />
-              <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: '#111827' }}>Aguardando os primeiros jogos</p>
-              <p style={{ margin: 0, fontSize: 11 }}>Copa inicia em 11/06/2026 🔥</p>
+              <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: '#111827' }}>{t('dashboard.waitingGames')}</p>
+              <p style={{ margin: 0, fontSize: 11 }}>{t('dashboard.copaStarts')}</p>
               {onGoToJogos && (
                 <button onClick={onGoToJogos} style={{ fontSize: 11, padding: '6px 16px', background: '#F9731610', border: '1px solid #F9731630', borderRadius: 8, color: '#F97316', fontWeight: 700, cursor: 'pointer', marginTop: 4 }}>
-                  Fazer palpites →
+                  {t('dashboard.makeBetsLink')}
                 </button>
               )}
             </div>
@@ -682,22 +684,22 @@ export function Dashboard({ poolId, onGoToJogos, onGoToPrecopa, onGoToGroups, on
 
         {/* Ranking Mini */}
         <div className="card" style={{ padding: 20 }}>
-          <p className="section-label">Ranking</p>
+          <p className="section-label">{t('dashboard.rankingMini')}</p>
 
           {!hasPool ? (
-            <p style={{ fontSize: 13, color: '#6B7280' }}>Selecione um bolão.</p>
+            <p style={{ fontSize: 13, color: '#6B7280' }}>{t('common.selectPool')}</p>
           ) : loadingR ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: '#6B7280', fontSize: 13 }}>
-              <div className="spinner" style={{ width: 16, height: 16 }} /> Carregando...
+              <div className="spinner" style={{ width: 16, height: 16 }} /> {t('common.loading')}
             </div>
           ) : ranking.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '12px 0', color: '#6B7280' }}>
               <Users size={28} opacity={0.25} style={{ margin: '0 auto 8px', display: 'block' }} />
-              <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: '#111827' }}>Só você aqui!</p>
-              <p style={{ margin: '4px 0 14px', fontSize: 11 }}>Convide amigos para competir.</p>
+              <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: '#111827' }}>{t('dashboard.onlyYou')}</p>
+              <p style={{ margin: '4px 0 14px', fontSize: 11 }}>{t('dashboard.inviteFriends')}</p>
               {onGoToBoloes && (
                 <button onClick={onGoToBoloes} style={{ fontSize: 11, padding: '8px 16px', background: '#F9731615', border: '1px solid #F9731635', borderRadius: 8, color: '#F97316', fontWeight: 700, cursor: 'pointer' }}>
-                  CONVIDAR AMIGOS
+                  {t('dashboard.inviteBtn')}
                 </button>
               )}
             </div>
@@ -735,7 +737,7 @@ export function Dashboard({ poolId, onGoToJogos, onGoToPrecopa, onGoToGroups, on
               </div>
               {ranking.length === 1 && onGoToBoloes && (
                 <button onClick={onGoToBoloes} style={{ width: '100%', marginTop: 12, fontSize: 11, padding: '8px', background: '#F9731615', border: '1px solid #F9731635', borderRadius: 8, color: '#F97316', fontWeight: 700, cursor: 'pointer' }}>
-                  + CONVIDAR AMIGOS
+                  {t('dashboard.inviteBtn2')}
                 </button>
               )}
             </>
@@ -748,29 +750,29 @@ export function Dashboard({ poolId, onGoToJogos, onGoToPrecopa, onGoToGroups, on
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <Activity size={13} color="#F97316" />
-            <p className="section-label" style={{ margin: 0 }}>Atividade Recente</p>
+            <p className="section-label" style={{ margin: 0 }}>{t('dashboard.activityTitle')}</p>
           </div>
           {feedEvents.length > 0 && (
-            <span style={{ fontSize: 10, color: '#9CA3AF' }}>Últimos {Math.min(feedEvents.length, 10)} eventos</span>
+            <span style={{ fontSize: 10, color: '#9CA3AF' }}>{t('dashboard.lastEvents', { count: Math.min(feedEvents.length, 10) })}</span>
           )}
         </div>
 
         {!hasPool ? (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '32px 0', gap: 8, color: '#6B7280' }}>
             <Activity size={32} opacity={0.2} />
-            <p style={{ margin: 0, fontSize: 13 }}>Selecione um bolão para ver a atividade</p>
+            <p style={{ margin: 0, fontSize: 13 }}>{t('dashboard.noPoolActivity')}</p>
           </div>
         ) : feedEvents.length === 0 ? (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '36px 0', gap: 10 }}>
             <Activity size={36} color="#F97316" opacity={0.2} />
-            <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: '#111827' }}>Nenhuma pontuação ainda</p>
+            <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: '#111827' }}>{t('dashboard.noScores')}</p>
             <p style={{ margin: 0, fontSize: 12, color: '#6B7280', textAlign: 'center', lineHeight: 1.6 }}>
-              Os pontos aparecem aqui após os resultados dos jogos.<br />
-              Copa do Mundo inicia em 11/06/2026 🔥
+              {t('dashboard.scoresDesc')}<br />
+              {t('dashboard.worldCupStarts')}
             </p>
             {onGoToJogos && (
               <button onClick={onGoToJogos} style={{ marginTop: 4, fontSize: 12, padding: '9px 22px', background: '#F9731612', border: '1px solid #F9731630', borderRadius: 9, color: '#F97316', fontWeight: 700, cursor: 'pointer', letterSpacing: '0.06em' }}>
-                FAZER PALPITES AGORA →
+                {t('dashboard.makeBetsNow')}
               </button>
             )}
           </div>
@@ -797,7 +799,7 @@ export function Dashboard({ poolId, onGoToJogos, onGoToPrecopa, onGoToGroups, on
                   </div>
                   <div style={{ textAlign: 'right', flexShrink: 0 }}>
                     <p style={{ margin: 0, fontSize: 14, fontWeight: 900, color: ev.color }}>+{evt.points}</p>
-                    <p style={{ margin: 0, fontSize: 9, color: '#9CA3AF' }}>{timeAgo(evt.occurredAt)}</p>
+                    <p style={{ margin: 0, fontSize: 9, color: '#9CA3AF' }}>{timeAgo(evt.occurredAt, t)}</p>
                   </div>
                 </div>
               );

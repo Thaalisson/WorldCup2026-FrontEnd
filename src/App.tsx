@@ -1,4 +1,6 @@
-﻿import { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { setLanguage, getLanguage } from './i18n';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ToastProvider } from './context/ToastContext';
 import { Login } from './pages/Login';
@@ -21,19 +23,6 @@ import { useToast } from './context/ToastContext';
 import { Plus, Hash, X, ChevronDown, Shield, Copy, Check, Share2, Users, Home, Zap, Star, BarChart2, Trophy, Flag, Target, MoreHorizontal, GitMerge, TrendingUp } from 'lucide-react';
 
 type Page = 'dashboard' | 'jogos' | 'precopa' | 'grupos' | 'grouppreds' | 'knockout' | 'boloes' | 'ranking' | 'stats' | 'performance' | 'selecoes' | 'admin' | 'settings';
-
-const NAV: { id: Page; label: string; icon: React.ReactNode }[] = [
-  { id: 'dashboard',  label: 'DASHBOARD',  icon: <Home size={11} /> },
-  { id: 'jogos',      label: 'JOGOS',      icon: <Zap size={11} /> },
-  { id: 'precopa',    label: 'PRÉ-COPA',   icon: <Star size={11} /> },
-  { id: 'grouppreds', label: 'GRUPOS',     icon: <Target size={11} /> },
-  { id: 'knockout',   label: 'MATA-MATA',  icon: <GitMerge size={11} /> },
-  { id: 'boloes',     label: 'MEUS BOLÕES',icon: <Users size={11} /> },
-  { id: 'ranking',     label: 'RANKING',     icon: <Trophy size={11} /> },
-  { id: 'performance', label: 'PERFORMANCE', icon: <TrendingUp size={11} /> },
-  { id: 'stats',       label: 'STATS',       icon: <BarChart2 size={11} /> },
-  { id: 'selecoes',    label: 'SELEÇÕES',    icon: <Flag size={11} /> },
-];
 
 const MOBILE_TABS = [
   { id: 'dashboard',  icon: <Home size={20} />,         label: 'Início' },
@@ -67,6 +56,7 @@ function Logo() {
 
 function MainApp() {
   const { user, logout } = useAuth();
+  const { t } = useTranslation();
   const [page, setPage] = useState<Page>('dashboard');
   const [pools, setPools] = useState<Pool[]>([]);
   const [activePoolId, setActivePoolId] = useState<string>('');
@@ -80,6 +70,27 @@ function MainApp() {
   const [createdPool, setCreatedPool] = useState<Pool | null>(null);
   const [copied, setCopied] = useState(false);
   const { toast } = useToast();
+
+  const NAV: { id: Page; label: string; icon: React.ReactNode }[] = [
+    { id: 'dashboard',   label: t('nav.dashboard'),   icon: <Home size={11} /> },
+    { id: 'jogos',       label: t('nav.games'),        icon: <Zap size={11} /> },
+    { id: 'precopa',     label: t('nav.precopa'),      icon: <Star size={11} /> },
+    { id: 'grouppreds',  label: t('nav.groups'),       icon: <Target size={11} /> },
+    { id: 'knockout',    label: t('nav.knockout'),     icon: <GitMerge size={11} /> },
+    { id: 'boloes',      label: t('nav.myPools'),      icon: <Users size={11} /> },
+    { id: 'ranking',     label: t('nav.ranking'),      icon: <Trophy size={11} /> },
+    { id: 'performance', label: t('nav.performance'),  icon: <TrendingUp size={11} /> },
+    { id: 'stats',       label: t('nav.stats'),        icon: <BarChart2 size={11} /> },
+    { id: 'selecoes',    label: t('nav.teams'),        icon: <Flag size={11} /> },
+  ];
+
+  const MOBILE_TAB_LABELS: Record<string, string> = {
+    dashboard: t('mobileTabs.home'),
+    jogos: t('mobileTabs.games'),
+    grouppreds: t('mobileTabs.groups'),
+    ranking: t('mobileTabs.ranking'),
+    mais: t('mobileTabs.more'),
+  };
 
   useEffect(() => {
     let initialized = false;
@@ -133,7 +144,7 @@ function MainApp() {
       setPoolMsg('');
       setCreatedPool(pool);
     } catch {
-      setPoolMsg('Erro ao criar bolão.');
+      setPoolMsg(t('app.createPoolError'));
     }
   }
 
@@ -148,7 +159,7 @@ function MainApp() {
       setShowJoinPool(false);
       setPoolMsg('');
     } catch {
-      setPoolMsg('Código inválido ou você já participa desse bolão.');
+      setPoolMsg(t('app.joinPoolError'));
     }
   }
 
@@ -188,7 +199,7 @@ function MainApp() {
           ))}
           {user?.isAdmin && (
             <button onClick={() => setPage('admin')} className={`nav-link${page === 'admin' ? ' active' : ''}`} style={{ color: '#EF4444', display: 'flex', alignItems: 'center', gap: 4 }}>
-              <Shield size={11} /> ADMIN
+              <Shield size={11} /> {t('nav.admin')}
             </button>
           )}
         </nav>
@@ -226,7 +237,7 @@ function MainApp() {
             onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = '#F97316'; (e.currentTarget as HTMLButtonElement).style.color = '#F97316'; }}
             onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = '#E5E7EB'; (e.currentTarget as HTMLButtonElement).style.color = '#6B7280'; }}
           >
-            <Plus style={{ width: 12, height: 12 }} /> Criar
+            <Plus style={{ width: 12, height: 12 }} /> {t('nav.create')}
           </button>
           <button
             className="header-pool-btns"
@@ -235,8 +246,11 @@ function MainApp() {
             onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = '#6B7280'; (e.currentTarget as HTMLButtonElement).style.color = '#111827'; }}
             onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = '#E5E7EB'; (e.currentTarget as HTMLButtonElement).style.color = '#6B7280'; }}
           >
-            <Hash style={{ width: 12, height: 12 }} /> Entrar
+            <Hash style={{ width: 12, height: 12 }} /> {t('nav.join')}
           </button>
+
+          {/* Language toggle */}
+          <LangToggle />
 
           {/* User avatar */}
           <div style={{ position: 'relative' }}>
@@ -270,7 +284,7 @@ function MainApp() {
                 </div>
                 {activePool && (
                   <div style={{ padding: '8px 12px', borderBottom: '1px solid #E5E7EB' }}>
-                    <p style={{ margin: 0, fontSize: 11, color: '#6B7280', marginBottom: 4 }}>Código do bolão</p>
+                    <p style={{ margin: 0, fontSize: 11, color: '#6B7280', marginBottom: 4 }}>{t('nav.inviteCodeLabel')}</p>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                       <span style={{ fontFamily: 'monospace', fontSize: 14, color: '#F97316', letterSpacing: '0.18em', fontWeight: 700 }}>{activePool.inviteCode}</span>
                       <button
@@ -280,7 +294,7 @@ function MainApp() {
                           setTimeout(() => setCopied(false), 2000);
                         }}
                         style={{ background: 'none', border: 'none', cursor: 'pointer', color: copied ? '#22C55E' : '#9CA3AF', padding: 2, display: 'flex', alignItems: 'center' }}
-                        title="Copiar código"
+                        title={t('app.copyCode')}
                       >
                         {copied ? <Check size={13} /> : <Copy size={13} />}
                       </button>
@@ -289,7 +303,7 @@ function MainApp() {
                 )}
                 {activePoolId && (
                   <button onClick={() => { setMenuOpen(false); setPage('settings'); }} style={{ width: '100%', padding: '8px 12px', background: 'none', border: 'none', color: '#6B7280', fontSize: 13, cursor: 'pointer', textAlign: 'left', borderRadius: 6 }}>
-                    Configurar Pontuação
+                    {t('nav.configureScoring')}
                   </button>
                 )}
                 {user?.isAdmin && (
@@ -301,7 +315,7 @@ function MainApp() {
                   onClick={() => { setMenuOpen(false); logout(); }}
                   style={{ width: '100%', padding: '8px 12px', background: 'none', border: 'none', color: '#EF4444', fontSize: 13, cursor: 'pointer', textAlign: 'left', borderRadius: 6 }}
                 >
-                  Sair
+                  {t('nav.signOut')}
                 </button>
               </div>
             )}
@@ -336,11 +350,11 @@ function MainApp() {
               <div style={{ width: 36, height: 4, background: '#E5E7EB', borderRadius: 2 }} />
             </div>
             {[
-              { id: 'precopa' as Page,     label: 'PRÉ-COPA',    icon: <Star size={16} /> },
-              { id: 'performance' as Page, label: 'PERFORMANCE', icon: <TrendingUp size={16} /> },
-              { id: 'boloes' as Page,      label: 'MEUS BOLÕES', icon: <Users size={16} /> },
-              { id: 'stats' as Page,       label: 'STATS',       icon: <BarChart2 size={16} /> },
-              { id: 'selecoes' as Page,    label: 'SELEÇÕES',    icon: <Flag size={16} /> },
+              { id: 'precopa' as Page,     label: t('nav.precopa'),     icon: <Star size={16} /> },
+              { id: 'performance' as Page, label: t('nav.performance'), icon: <TrendingUp size={16} /> },
+              { id: 'boloes' as Page,      label: t('nav.myPools'),     icon: <Users size={16} /> },
+              { id: 'stats' as Page,       label: t('nav.stats'),       icon: <BarChart2 size={16} /> },
+              { id: 'selecoes' as Page,    label: t('nav.teams'),       icon: <Flag size={16} /> },
             ].map(item => (
               <button
                 key={item.id}
@@ -363,7 +377,7 @@ function MainApp() {
                 onClick={() => { setPage('admin'); setMobileNavOpen(false); }}
                 style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '13px 24px', width: '100%', background: 'none', border: 'none', color: '#EF4444', fontSize: 13, fontWeight: 700, cursor: 'pointer', letterSpacing: '0.08em' }}
               >
-                <Shield size={16} /> ADMIN
+                <Shield size={16} /> {t('nav.admin')}
               </button>
             )}
             <div style={{ height: 1, background: '#F3F4F6', margin: '4px 16px' }} />
@@ -371,13 +385,13 @@ function MainApp() {
               onClick={() => { setShowCreatePool(v => !v); setShowJoinPool(false); setPoolMsg(''); setMobileNavOpen(false); }}
               style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '13px 24px', width: '100%', background: 'none', border: 'none', color: '#6B7280', fontSize: 13, fontWeight: 700, cursor: 'pointer', letterSpacing: '0.08em' }}
             >
-              <Plus size={16} style={{ color: '#9CA3AF' }} /> CRIAR BOLÃO
+              <Plus size={16} style={{ color: '#9CA3AF' }} /> {t('mobileTabs.createPool')}
             </button>
             <button
               onClick={() => { setShowJoinPool(v => !v); setShowCreatePool(false); setPoolMsg(''); setMobileNavOpen(false); }}
               style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '13px 24px', width: '100%', background: 'none', border: 'none', color: '#6B7280', fontSize: 13, fontWeight: 700, cursor: 'pointer', letterSpacing: '0.08em' }}
             >
-              <Hash size={16} style={{ color: '#9CA3AF' }} /> ENTRAR COM CÓDIGO
+              <Hash size={16} style={{ color: '#9CA3AF' }} /> {t('mobileTabs.joinPool')}
             </button>
           </div>
         </>
@@ -388,16 +402,16 @@ function MainApp() {
         <div style={{ background: '#FFFFFF', borderBottom: '1px solid #E5E7EB', padding: '10px 24px' }}>
           {showCreatePool && (
             <form onSubmit={handleCreatePool} className="pool-form" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <input placeholder="Nome do bolão" value={poolName} onChange={e => setPoolName(e.target.value)} required className="input-field" style={{ maxWidth: 260, padding: '8px 12px', fontSize: 13 }} />
-              <button type="submit" className="btn-primary" style={{ width: 'auto', padding: '8px 20px', fontSize: 13 }}>Criar</button>
+              <input placeholder={t('app.poolFormName')} value={poolName} onChange={e => setPoolName(e.target.value)} required className="input-field" style={{ maxWidth: 260, padding: '8px 12px', fontSize: 13 }} />
+              <button type="submit" className="btn-primary" style={{ width: 'auto', padding: '8px 20px', fontSize: 13 }}>{t('nav.create')}</button>
               <button type="button" onClick={() => setShowCreatePool(false)} style={{ background: 'none', border: 'none', color: '#6B7280', cursor: 'pointer', padding: 4 }}><X style={{ width: 16, height: 16 }} /></button>
               {poolMsg && <span style={{ color: '#EF4444', fontSize: 13 }}>{poolMsg}</span>}
             </form>
           )}
           {showJoinPool && (
             <form onSubmit={handleJoinPool} className="pool-form" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <input placeholder="Código de convite (ex: A3F7B2C1)" value={inviteCode} onChange={e => setInviteCode(e.target.value.toUpperCase())} required className="input-field" style={{ maxWidth: 280, padding: '8px 12px', fontSize: 13, fontFamily: 'monospace', letterSpacing: '0.15em' }} />
-              <button type="submit" className="btn-primary" style={{ width: 'auto', padding: '8px 20px', fontSize: 13 }}>Entrar</button>
+              <input placeholder={t('app.poolFormCode')} value={inviteCode} onChange={e => setInviteCode(e.target.value.toUpperCase())} required className="input-field" style={{ maxWidth: 280, padding: '8px 12px', fontSize: 13, fontFamily: 'monospace', letterSpacing: '0.15em' }} />
+              <button type="submit" className="btn-primary" style={{ width: 'auto', padding: '8px 20px', fontSize: 13 }}>{t('nav.join')}</button>
               <button type="button" onClick={() => setShowJoinPool(false)} style={{ background: 'none', border: 'none', color: '#6B7280', cursor: 'pointer', padding: 4 }}><X style={{ width: 16, height: 16 }} /></button>
               {poolMsg && <span style={{ color: '#EF4444', fontSize: 13 }}>{poolMsg}</span>}
             </form>
@@ -433,10 +447,10 @@ function MainApp() {
             </div>
 
             <h2 style={{ margin: '0 0 4px', fontSize: 20, fontWeight: 900, color: '#111827' }}>
-              Bolão criado!
+              {t('app.poolCreatedTitle')}
             </h2>
             <p style={{ margin: '0 0 24px', fontSize: 13, color: '#6B7280' }}>
-              Compartilhe o código abaixo para seus amigos entrarem no <strong>{createdPool.name}</strong>
+              {t('app.poolCreatedDesc')} <strong>{createdPool.name}</strong>
             </p>
 
             {/* Invite code display */}
@@ -444,7 +458,7 @@ function MainApp() {
               background: '#F3F4F6', borderRadius: 12, padding: '16px 20px',
               border: '2px dashed #E5E7EB', marginBottom: 16,
             }}>
-              <p style={{ margin: '0 0 4px', fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', color: '#9CA3AF', textTransform: 'uppercase' }}>Código de convite</p>
+              <p style={{ margin: '0 0 4px', fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', color: '#9CA3AF', textTransform: 'uppercase' }}>{t('common.inviteCode')}</p>
               <p style={{ margin: 0, fontSize: 28, fontFamily: 'monospace', fontWeight: 900, color: '#F97316', letterSpacing: '0.25em' }}>
                 {createdPool.inviteCode}
               </p>
@@ -469,11 +483,11 @@ function MainApp() {
                 }}
               >
                 {copied ? <Check size={15} /> : <Copy size={15} />}
-                {copied ? 'Código copiado!' : 'Copiar código'}
+                {copied ? t('app.codeCopied') : t('app.copyCode')}
               </button>
 
               <a
-                href={`https://wa.me/?text=${encodeURIComponent(`Entra no meu bolão da Copa 2026! 🏆⚽\nNome: ${createdPool.name}\nCódigo: ${createdPool.inviteCode}`)}`}
+                href={`https://wa.me/?text=${encodeURIComponent(t('app.whatsappText', { name: createdPool.name, code: createdPool.inviteCode }))}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 style={{
@@ -487,7 +501,7 @@ function MainApp() {
                 onMouseLeave={e => (e.currentTarget.style.background = '#25D366')}
               >
                 <Share2 size={15} />
-                Compartilhar no WhatsApp
+                {t('app.shareWhatsapp')}
               </a>
 
               <button
@@ -495,7 +509,7 @@ function MainApp() {
                 className="btn-primary"
                 style={{ marginTop: 4 }}
               >
-                Começar a palpitar →
+                {t('app.startBetting')}
               </button>
             </div>
           </div>
@@ -519,7 +533,7 @@ function MainApp() {
               }}
             >
               {tab.icon}
-              <span>{tab.label}</span>
+              <span>{MOBILE_TAB_LABELS[tab.id] ?? tab.label}</span>
             </button>
           );
         })}
@@ -535,21 +549,20 @@ function MainApp() {
           onGoToBoloes={() => setPage('boloes')}
         />}
         {page === 'jogos' && activePoolId && <Predictions poolId={activePoolId} />}
-        {page === 'jogos' && !activePoolId && <EmptyState icon="⚽" text="Selecione ou crie um bolão para fazer palpites." />}
+        {page === 'jogos' && !activePoolId && <EmptyState icon="⚽" text={t('app.noPoolForBets')} />}
         {page === 'precopa' && activePoolId && <ChampionPick poolId={activePoolId} />}
-        {page === 'precopa' && !activePoolId && <EmptyState icon="🏆" text="Selecione ou crie um bolão para fazer palpite de campeão." />}
+        {page === 'precopa' && !activePoolId && <EmptyState icon="🏆" text={t('app.noPoolForChampion')} />}
         {page === 'grupos' && <Groups />}
         {page === 'grouppreds' && <GroupPredictions poolId={activePoolId || undefined} />}
         {page === 'knockout' && <Knockout />}
         {page === 'admin' && user?.isAdmin && <AdminPanel poolId={activePoolId || undefined} />}
-        {page === 'admin' && !user?.isAdmin && <EmptyState icon="🔒" text="Acesso restrito a administradores." />}
+        {page === 'admin' && !user?.isAdmin && <EmptyState icon="🔒" text={t('app.adminOnly')} />}
         {page === 'settings' && activePoolId && <PoolSettings poolId={activePoolId} />}
-        {page === 'settings' && !activePoolId && <EmptyState icon="⚙️" text="Selecione um bolão para configurar." />}
+        {page === 'settings' && !activePoolId && <EmptyState icon="⚙️" text={t('app.noPoolForSettings')} />}
         {page === 'boloes' && (
           <div>
             <h2 style={{ margin: '0 0 20px', fontSize: 22, fontWeight: 900, fontStyle: 'italic' }}>
-              <span style={{ color: '#111827' }}>MEUS </span>
-              <span style={{ color: '#F97316' }}>BOLÕES</span>
+              <span style={{ color: '#111827', fontStyle: 'italic' }}>{t('app.myPoolsTitle')} </span>
             </h2>
             {pools.length === 0 ? (
               <WelcomeScreen
@@ -565,25 +578,25 @@ function MainApp() {
                         <p style={{ margin: '0 0 2px', fontWeight: 700, color: '#111827', fontSize: 15 }}>{p.name}</p>
                         <p style={{ margin: 0, fontSize: 12, color: '#6B7280' }}>
                           <Users size={11} style={{ verticalAlign: 'middle', marginRight: 3 }} />
-                          {p.participantCount} participante{p.participantCount !== 1 ? 's' : ''}
+                          {t('app.participantCount', { count: p.participantCount })}
                         </p>
                       </div>
                       <button
                         onClick={() => { setActivePoolId(p.id); setPage('jogos'); }}
                         style={{ background: '#FFF7ED', border: '1px solid #FDBA74', color: '#F97316', borderRadius: 7, padding: '5px 12px', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}
                       >
-                        Palpitar →
+                        {t('app.bet')}
                       </button>
                     </div>
                     <div style={{ background: '#F9FAFB', borderRadius: 8, padding: '10px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                       <div>
-                        <p style={{ margin: '0 0 2px', fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#9CA3AF' }}>Código de convite</p>
+                        <p style={{ margin: '0 0 2px', fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#9CA3AF' }}>{t('common.inviteCode')}</p>
                         <p style={{ margin: 0, fontFamily: 'monospace', fontSize: 15, color: '#F97316', letterSpacing: '0.18em', fontWeight: 800 }}>{p.inviteCode}</p>
                       </div>
                       <button
                         onClick={() => { navigator.clipboard.writeText(p.inviteCode); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
                         style={{ background: 'none', border: '1px solid #E5E7EB', borderRadius: 7, padding: '6px 8px', cursor: 'pointer', color: '#9CA3AF', display: 'flex', alignItems: 'center', gap: 4, fontSize: 11 }}
-                        title="Copiar código"
+                        title={t('app.copyCode')}
                       >
                         {copied ? <Check size={13} color="#22C55E" /> : <Copy size={13} />}
                       </button>
@@ -595,9 +608,9 @@ function MainApp() {
           </div>
         )}
         {page === 'ranking' && activePoolId && <Ranking poolId={activePoolId} />}
-        {page === 'ranking' && !activePoolId && <EmptyState icon="🏅" text="Selecione um bolão para ver o ranking." />}
+        {page === 'ranking' && !activePoolId && <EmptyState icon="🏅" text={t('app.noPoolForRanking')} />}
         {page === 'performance' && activePoolId && <Performance poolId={activePoolId} />}
-        {page === 'performance' && !activePoolId && <EmptyState icon="📊" text="Selecione um bolão para ver sua performance." />}
+        {page === 'performance' && !activePoolId && <EmptyState icon="📊" text={t('app.noPoolForPerformance')} />}
         {page === 'stats' && <Stats poolId={activePoolId || undefined} />}
         {page === 'selecoes' && <Teams />}
       </main>
@@ -606,6 +619,7 @@ function MainApp() {
 }
 
 function WelcomeScreen({ onCreatePool, onJoinPool }: { onCreatePool: () => void; onJoinPool: () => void }) {
+  const { t } = useTranslation();
   return (
     <div style={{ maxWidth: 520, margin: '0 auto', paddingTop: 24 }}>
       {/* Hero */}
@@ -616,10 +630,10 @@ function WelcomeScreen({ onCreatePool, onJoinPool }: { onCreatePool: () => void;
       }}>
         <div style={{ fontSize: 48, marginBottom: 12 }}>⚽</div>
         <h2 style={{ margin: '0 0 8px', fontSize: 22, fontWeight: 900, color: '#fff', fontStyle: 'italic' }}>
-          BEM-VINDO AO BOLÃO 2026!
+          {t('app.welcomeTitle')}
         </h2>
         <p style={{ margin: 0, fontSize: 14, color: 'rgba(255,255,255,0.75)', lineHeight: 1.5 }}>
-          Crie um bolão com amigos ou entre em um existente usando o código de convite.
+          {t('app.welcomeDesc')}
         </p>
       </div>
 
@@ -639,8 +653,8 @@ function WelcomeScreen({ onCreatePool, onJoinPool }: { onCreatePool: () => void;
             <Plus size={22} color="#F97316" />
           </div>
           <div>
-            <p style={{ margin: '0 0 2px', fontWeight: 800, color: '#111827', fontSize: 14 }}>Criar bolão</p>
-            <p style={{ margin: 0, fontSize: 11, color: '#9CA3AF', lineHeight: 1.4 }}>Convide seus amigos com um código</p>
+            <p style={{ margin: '0 0 2px', fontWeight: 800, color: '#111827', fontSize: 14 }}>{t('app.createPoolCard')}</p>
+            <p style={{ margin: 0, fontSize: 11, color: '#9CA3AF', lineHeight: 1.4 }}>{t('app.createPoolCardDesc')}</p>
           </div>
         </button>
 
@@ -658,20 +672,20 @@ function WelcomeScreen({ onCreatePool, onJoinPool }: { onCreatePool: () => void;
             <Hash size={22} color="#6B7280" />
           </div>
           <div>
-            <p style={{ margin: '0 0 2px', fontWeight: 800, color: '#111827', fontSize: 14 }}>Entrar com código</p>
-            <p style={{ margin: 0, fontSize: 11, color: '#9CA3AF', lineHeight: 1.4 }}>Use o código de um amigo</p>
+            <p style={{ margin: '0 0 2px', fontWeight: 800, color: '#111827', fontSize: 14 }}>{t('app.joinPoolCard')}</p>
+            <p style={{ margin: 0, fontSize: 11, color: '#9CA3AF', lineHeight: 1.4 }}>{t('app.joinPoolCardDesc')}</p>
           </div>
         </button>
       </div>
 
       {/* How it works */}
       <div className="card" style={{ padding: 20, marginTop: 16 }}>
-        <p style={{ margin: '0 0 14px', fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#9CA3AF' }}>Como funciona</p>
+        <p style={{ margin: '0 0 14px', fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#9CA3AF' }}>{t('app.howItWorks')}</p>
         {[
-          { step: '1', text: 'Crie um bolão e você receberá um código único' },
-          { step: '2', text: 'Compartilhe o código no WhatsApp com seus amigos' },
-          { step: '3', text: 'Todos fazem seus palpites antes de cada jogo' },
-          { step: '4', text: 'Acompanhe o ranking em tempo real!' },
+          { step: '1', text: t('app.howStep1') },
+          { step: '2', text: t('app.howStep2') },
+          { step: '3', text: t('app.howStep3') },
+          { step: '4', text: t('app.howStep4') },
         ].map(({ step, text }) => (
           <div key={step} style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: step === '4' ? 0 : 10 }}>
             <div style={{ width: 24, height: 24, borderRadius: '50%', background: '#F97316', color: '#fff', fontSize: 11, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -691,6 +705,49 @@ function EmptyState({ icon, text }: { icon: string; text: string }) {
       <span style={{ fontSize: 40, opacity: 0.4 }}>{icon}</span>
       <p style={{ fontSize: 14, margin: 0 }}>{text}</p>
     </div>
+  );
+}
+
+function LangToggle() {
+  const [lang, setLangState] = useState<'pt' | 'en'>(getLanguage);
+
+  function toggle() {
+    const next = lang === 'pt' ? 'en' : 'pt';
+    setLanguage(next);
+    setLangState(next);
+  }
+
+  return (
+    <button
+      onClick={toggle}
+      title={lang === 'pt' ? 'Switch to English' : 'Mudar para Português'}
+      style={{
+        background: 'none',
+        border: '1px solid #E5E7EB',
+        borderRadius: 7,
+        padding: '4px 9px',
+        fontSize: 11,
+        fontWeight: 800,
+        color: '#6B7280',
+        cursor: 'pointer',
+        letterSpacing: '0.06em',
+        transition: 'border-color 0.15s, color 0.15s',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 4,
+        flexShrink: 0,
+      }}
+      onMouseEnter={e => { const b = e.currentTarget as HTMLButtonElement; b.style.borderColor = '#F97316'; b.style.color = '#F97316'; }}
+      onMouseLeave={e => { const b = e.currentTarget as HTMLButtonElement; b.style.borderColor = '#E5E7EB'; b.style.color = '#6B7280'; }}
+    >
+      <img
+        src={`https://flagcdn.com/w20/${lang === 'pt' ? 'ca' : 'br'}.png`}
+        width={18} height={13}
+        style={{ borderRadius: 2, objectFit: 'cover', display: 'block', flexShrink: 0 }}
+        alt=""
+      />
+      {lang === 'pt' ? 'EN' : 'PT'}
+    </button>
   );
 }
 

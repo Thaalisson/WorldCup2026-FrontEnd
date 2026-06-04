@@ -1,11 +1,21 @@
-﻿import { useState } from 'react';
+import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import { apiPost, setStoredToken } from '../services/api';
+import { setLanguage, getLanguage } from '../i18n';
 
 type Props = { onGoToLogin: () => void };
 
 export function Register({ onGoToLogin }: Props) {
+  const { t } = useTranslation();
   const { login } = useAuth();
+  const [lang, setLang] = useState<'pt' | 'en'>(getLanguage);
+
+  function toggleLang() {
+    const next = lang === 'pt' ? 'en' : 'pt';
+    setLanguage(next);
+    setLang(next);
+  }
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -15,7 +25,7 @@ export function Register({ onGoToLogin }: Props) {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError('');
-    if (password.length < 6) { setError('A senha deve ter pelo menos 6 caracteres.'); return; }
+    if (password.length < 6) { setError(t('auth.passwordTooShort')); return; }
     setLoading(true);
     try {
       const data = await apiPost<{ userId: string; name: string; email: string; isAdmin: boolean; token: string }>(
@@ -25,7 +35,7 @@ export function Register({ onGoToLogin }: Props) {
       login({ id: data.userId, name: data.name, email: data.email, isAdmin: data.isAdmin ?? false });
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : '';
-      setError(msg.includes('409') ? 'E-mail já cadastrado.' : 'Erro ao criar conta. Tente novamente.');
+      setError(msg.includes('409') ? t('auth.emailExists') : t('auth.registerError'));
     } finally {
       setLoading(false);
     }
@@ -42,6 +52,32 @@ export function Register({ onGoToLogin }: Props) {
       position: 'relative',
       overflow: 'hidden',
     }}>
+      {/* Language toggle — fixed top-right */}
+      <button
+        onClick={toggleLang}
+        title={lang === 'pt' ? 'Switch to English' : 'Mudar para Português'}
+        style={{
+          position: 'fixed', top: 16, right: 16, zIndex: 50,
+          background: '#FFFFFF', border: '1px solid #E5E7EB',
+          borderRadius: 8, padding: '6px 12px',
+          fontSize: 12, fontWeight: 800, color: '#374151',
+          cursor: 'pointer', letterSpacing: '0.05em',
+          boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
+          transition: 'border-color 0.15s, color 0.15s, box-shadow 0.15s',
+          display: 'flex', alignItems: 'center', gap: 6,
+        }}
+        onMouseEnter={e => { const b = e.currentTarget as HTMLButtonElement; b.style.borderColor = '#F97316'; b.style.color = '#F97316'; b.style.boxShadow = '0 2px 8px rgba(249,115,22,0.2)'; }}
+        onMouseLeave={e => { const b = e.currentTarget as HTMLButtonElement; b.style.borderColor = '#E5E7EB'; b.style.color = '#374151'; b.style.boxShadow = '0 1px 4px rgba(0,0,0,0.08)'; }}
+      >
+        <img
+          src={`https://flagcdn.com/w20/${lang === 'pt' ? 'ca' : 'br'}.png`}
+          width={18} height={13}
+          style={{ borderRadius: 2, objectFit: 'cover', display: 'block', flexShrink: 0 }}
+          alt=""
+        />
+        {lang === 'pt' ? 'EN' : 'PT'}
+      </button>
+
       <div style={{ position: 'absolute', top: -120, left: -120, width: 400, height: 400, background: 'radial-gradient(circle, #F9731622 0%, transparent 70%)', pointerEvents: 'none' }} />
       <div style={{ position: 'absolute', bottom: -120, right: -120, width: 400, height: 400, background: 'radial-gradient(circle, #F9731614 0%, transparent 70%)', pointerEvents: 'none' }} />
 
@@ -71,23 +107,23 @@ export function Register({ onGoToLogin }: Props) {
             <span style={{ color: '#F97316', fontStyle: 'italic' }}>2026</span>
           </h1>
           <p style={{ color: '#6B7280', fontSize: 13, margin: '0 0 28px' }}>
-            Crie sua conta e entre na disputa.
+            {t('auth.registerSubtitle')}
           </p>
 
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 12, textAlign: 'left' }}>
-            <input type="text" placeholder="Seu nome" value={name} onChange={e => setName(e.target.value)} required className="input-field" />
-            <input type="email" placeholder="seu@email.com" value={email} onChange={e => setEmail(e.target.value)} required className="input-field" />
-            <input type="password" placeholder="Senha (mínimo 6 caracteres)" value={password} onChange={e => setPassword(e.target.value)} required className="input-field" />
+            <input type="text" placeholder={t('auth.namePlaceholder')} value={name} onChange={e => setName(e.target.value)} required className="input-field" />
+            <input type="email" placeholder={t('auth.emailPlaceholder')} value={email} onChange={e => setEmail(e.target.value)} required className="input-field" />
+            <input type="password" placeholder={t('auth.passwordMinPlaceholder')} value={password} onChange={e => setPassword(e.target.value)} required className="input-field" />
             {error && <p style={{ color: '#EF4444', fontSize: 13, margin: 0, textAlign: 'center' }}>⚠ {error}</p>}
             <button type="submit" disabled={loading} className="btn-primary" style={{ marginTop: 4 }}>
-              {loading ? 'CRIANDO CONTA...' : 'CRIAR CONTA'}
+              {loading ? t('auth.registering') : t('auth.registerButton')}
             </button>
           </form>
 
           <p style={{ marginTop: 20, fontSize: 13, color: '#6B7280' }}>
-            Já tem conta?{' '}
+            {t('auth.hasAccount')}{' '}
             <button onClick={onGoToLogin} style={{ background: 'none', border: 'none', color: '#F97316', cursor: 'pointer', fontWeight: 700, padding: 0, fontSize: 13 }}>
-              Entrar
+              {t('auth.login')}
             </button>
           </p>
         </div>

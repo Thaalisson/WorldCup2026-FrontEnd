@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { MatchCard } from '../components/MatchCard';
 import { apiGet, apiPost } from '../services/api';
 import type { Match, Prediction } from '../types';
@@ -24,6 +25,7 @@ function isBrazilThisWeek(isoString: string): boolean {
 }
 
 export function Predictions({ poolId }: Props) {
+  const { t } = useTranslation();
   const [matches, setMatches] = useState<Match[]>([]);
   const [scores, setScores] = useState<Record<string, ScoreEntry>>({});
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
@@ -53,7 +55,7 @@ export function Predictions({ poolId }: Props) {
         setScores(initScores);
         setSavedIds(initSaved);
       })
-      .catch(() => setError('Não foi possível carregar os jogos.'))
+      .catch(() => setError(t('predictions.loadError')))
       .finally(() => setLoading(false));
   }, [poolId]);
 
@@ -100,13 +102,13 @@ export function Predictions({ poolId }: Props) {
       setSavedIds(prev => new Set([...prev, ...saveable.map(m => m.id)]));
       setDirtyIds(new Set());
       if (result.skipped === 0) {
-        setSaveMsg({ type: 'success', text: `${result.saved} palpite${result.saved !== 1 ? 's' : ''} salvo${result.saved !== 1 ? 's' : ''} com sucesso!` });
+        setSaveMsg({ type: 'success', text: t('predictions.savedSuccess', { count: result.saved }) });
       } else {
-        setSaveMsg({ type: 'error', text: `${result.saved} salvos, ${result.skipped} bloqueados.` });
+        setSaveMsg({ type: 'error', text: t('predictions.savedPartial', { saved: result.saved, skipped: result.skipped }) });
       }
     } catch (err) {
       console.error('Erro ao salvar palpites:', err);
-      setSaveMsg({ type: 'error', text: 'Erro ao salvar. Tente novamente.' });
+      setSaveMsg({ type: 'error', text: t('predictions.saveError') });
     } finally {
       setSaving(false);
       saveMsgTimer.current = setTimeout(() => setSaveMsg(null), 4000);
@@ -155,7 +157,7 @@ export function Predictions({ poolId }: Props) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: 280, gap: 12 }}>
         <div className="spinner" />
-        <span style={{ fontSize: 13, color: '#6B7280' }}>Carregando jogos...</span>
+        <span style={{ fontSize: 13, color: '#6B7280' }}>{t('common.loadingMatches')}</span>
       </div>
     );
   }
@@ -166,8 +168,8 @@ export function Predictions({ poolId }: Props) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: 280, gap: 10 }}>
         <span style={{ fontSize: 40 }}>⚽</span>
-        <p style={{ margin: 0, fontSize: 14, color: '#6B7280' }}>Nenhum jogo cadastrado ainda.</p>
-        <p style={{ margin: 0, fontSize: 12, color: '#D1D5DB' }}>Um admin deve importar os jogos da Copa.</p>
+        <p style={{ margin: 0, fontSize: 14, color: '#6B7280' }}>{t('predictions.noMatches')}</p>
+        <p style={{ margin: 0, fontSize: 12, color: '#D1D5DB' }}>{t('predictions.noMatchesAdmin')}</p>
       </div>
     );
   }
@@ -179,14 +181,14 @@ export function Predictions({ poolId }: Props) {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
         <div>
           <h1 style={{ margin: 0, fontSize: 28, fontWeight: 900, fontStyle: 'italic', letterSpacing: '-0.5px' }}>
-            <span style={{ color: '#111827' }}>CENTRAL DE </span>
-            <span style={{ color: '#F97316' }}>PALPITES</span>
+            <span style={{ color: '#111827' }}>{t('predictions.title')} </span>
+            <span style={{ color: '#F97316' }}>{t('predictions.titleHighlight')}</span>
           </h1>
           {saveableCount > 0 && (
             <p style={{ margin: '5px 0 0', fontSize: 12, color: '#6B7280' }}>
-              {savedCount}/{saveableCount} palpites salvos
+              {t('predictions.savedProgress', { done: savedCount, total: saveableCount })}
               {dirtyCount > 0 && (
-                <span style={{ color: '#F97316', fontWeight: 700 }}> · {dirtyCount} alteração{dirtyCount !== 1 ? 'ões' : ''} pendente{dirtyCount !== 1 ? 's' : ''}</span>
+                <span style={{ color: '#F97316', fontWeight: 700 }}> · {t('predictions.pendingChanges', { count: dirtyCount })}</span>
               )}
             </p>
           )}
@@ -217,7 +219,7 @@ export function Predictions({ poolId }: Props) {
               }}
             >
               <Save size={14} />
-              {saving ? 'SALVANDO...' : `SALVAR ALTERAÇÕES (${dirtyCount})`}
+              {saving ? t('predictions.saving') : t('predictions.saveChanges', { count: dirtyCount })}
             </button>
           )}
         </div>
@@ -228,9 +230,9 @@ export function Predictions({ poolId }: Props) {
         {/* Date filter */}
         <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
           {([
-            { id: 'all',   label: 'Todos',        icon: null },
-            { id: 'today', label: 'Hoje',          icon: <Zap size={10} /> },
-            { id: 'week',  label: 'Esta semana',   icon: <Calendar size={10} /> },
+            { id: 'all',   label: t('predictions.filterAll'),   icon: null },
+            { id: 'today', label: t('predictions.filterToday'), icon: <Zap size={10} /> },
+            { id: 'week',  label: t('predictions.filterWeek'),  icon: <Calendar size={10} /> },
           ] as { id: DateFilter; label: string; icon: React.ReactNode }[]).map(f => (
             <button
               key={f.id}
@@ -252,7 +254,7 @@ export function Predictions({ poolId }: Props) {
         {/* Group filter */}
         {groups.length > 0 && (
           <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', alignItems: 'center' }}>
-            <span style={{ fontSize: 10, fontWeight: 700, color: '#9CA3AF', letterSpacing: '0.1em', textTransform: 'uppercase', marginRight: 2 }}>Grupo:</span>
+            <span style={{ fontSize: 10, fontWeight: 700, color: '#9CA3AF', letterSpacing: '0.1em', textTransform: 'uppercase', marginRight: 2 }}>{t('predictions.groupLabel')}</span>
             <button
               onClick={() => setSelectedGroup(null)}
               style={{
@@ -262,7 +264,7 @@ export function Predictions({ poolId }: Props) {
                 transition: 'all 0.15s',
               }}
             >
-              TODOS
+              {t('predictions.allGroups')}
             </button>
             {groups.map(g => (
               <button
@@ -288,7 +290,7 @@ export function Predictions({ poolId }: Props) {
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
             <p className="section-label" style={{ margin: 0 }}>{date}</p>
             <div style={{ flex: 1, height: 1, background: '#E5E7EB' }} />
-            <span style={{ fontSize: 10, color: '#9CA3AF' }}>{dateMatches.length} jogo{dateMatches.length !== 1 ? 's' : ''}</span>
+            <span style={{ fontSize: 10, color: '#9CA3AF' }}>{t('predictions.matchCount', { count: dateMatches.length })}</span>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 12 }}>
             {dateMatches.map(m => (
@@ -309,7 +311,7 @@ export function Predictions({ poolId }: Props) {
 
       {upcomingFiltered.length === 0 && selectedGroup && (
         <div style={{ textAlign: 'center', padding: '32px 0', color: '#9CA3AF', fontSize: 13 }}>
-          Nenhum jogo disponível para o Grupo {selectedGroup}.
+          {t('predictions.noMatchesForGroup', { group: selectedGroup })}
         </div>
       )}
 
@@ -317,9 +319,9 @@ export function Predictions({ poolId }: Props) {
       {finishedFiltered.length > 0 && (
         <section>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-            <p className="section-label" style={{ margin: 0 }}>Encerrados</p>
+            <p className="section-label" style={{ margin: 0 }}>{t('predictions.finished')}</p>
             <div style={{ flex: 1, height: 1, background: '#E5E7EB' }} />
-            <span style={{ fontSize: 10, color: '#9CA3AF' }}>{finishedFiltered.length} jogo{finishedFiltered.length !== 1 ? 's' : ''}</span>
+            <span style={{ fontSize: 10, color: '#9CA3AF' }}>{t('predictions.matchCount', { count: finishedFiltered.length })}</span>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 12 }}>
             {finishedFiltered.map(m => (

@@ -1,4 +1,5 @@
-﻿import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { RankingItem } from '../types';
 
 type Props = { items: RankingItem[]; poolId?: string };
@@ -6,6 +7,8 @@ type Props = { items: RankingItem[]; poolId?: string };
 const MEDALS = ['🥇', '🥈', '🥉'];
 
 export function RankingTable({ items, poolId }: Props) {
+  const { t } = useTranslation();
+
   const prevPositions = useMemo<Record<string, number>>(() => {
     if (!poolId) return {};
     try { return JSON.parse(localStorage.getItem(`ranking_prev_${poolId}`) ?? '{}'); }
@@ -33,7 +36,13 @@ export function RankingTable({ items, poolId }: Props) {
       <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 420 }}>
         <thead>
           <tr style={{ borderBottom: '1px solid #E5E7EB' }}>
-            {['#', 'JOGADOR', 'PONTOS', 'EXATOS', 'RESULTADOS'].map((h, i) => (
+            {[
+              t('ranking.colPos'),
+              t('ranking.colPlayer'),
+              t('ranking.colPts'),
+              t('ranking.colExact'),
+              t('ranking.colCorrect'),
+            ].map((h, i) => (
               <th key={h} style={{
                 padding: '12px 16px',
                 textAlign: i <= 1 ? 'left' : 'right',

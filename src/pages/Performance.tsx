@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { apiGet } from '../services/api';
 import type { Match, Prediction } from '../types';
 import { Target, Zap, Award, TrendingUp } from 'lucide-react';
@@ -21,12 +22,6 @@ function getResult(ph: number, pa: number, ah: number, aa: number): Result {
   return pd === ad ? 'correct' : 'wrong';
 }
 
-const RS = {
-  exact:   { bg: '#16A34A12', border: '#16A34A30', color: '#16A34A', icon: '✅', label: 'Placar exato' },
-  correct: { bg: '#D9770612', border: '#D9770630', color: '#D97706', icon: '🟡', label: 'Resultado certo' },
-  wrong:   { bg: '#6B728010', border: '#6B728025', color: '#6B7280', icon: '❌', label: 'Errou' },
-};
-
 function FlagImg({ isoCode, name }: { isoCode?: string; name: string }) {
   if (!isoCode) return null;
   return (
@@ -40,6 +35,7 @@ function FlagImg({ isoCode, name }: { isoCode?: string; name: string }) {
 }
 
 export function Performance({ poolId }: Props) {
+  const { t } = useTranslation();
   const [preds, setPreds] = useState<Prediction[]>([]);
   const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
@@ -58,10 +54,16 @@ export function Performance({ poolId }: Props) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: 280, gap: 12 }}>
         <div className="spinner" />
-        <span style={{ fontSize: 13, color: '#6B7280' }}>Calculando performance...</span>
+        <span style={{ fontSize: 13, color: '#6B7280' }}>{t('common.loading')}</span>
       </div>
     );
   }
+
+  const RS = {
+    exact:   { bg: '#16A34A12', border: '#16A34A30', color: '#16A34A', icon: '✅', label: t('performance.exactScore') },
+    correct: { bg: '#D9770612', border: '#D9770630', color: '#D97706', icon: '🟡', label: t('performance.correctResult') },
+    wrong:   { bg: '#6B728010', border: '#6B728025', color: '#6B7280', icon: '❌', label: t('performance.wrong') },
+  };
 
   const matchMap = new Map(matches.map(m => [m.id, m]));
 
@@ -118,19 +120,19 @@ export function Performance({ poolId }: Props) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
       <div>
         <h1 style={{ margin: 0, fontSize: 28, fontWeight: 900, fontStyle: 'italic', letterSpacing: '-0.5px' }}>
-          <span style={{ color: '#111827' }}>MINHA </span>
-          <span style={{ color: '#F97316' }}>PERFORMANCE</span>
+          <span style={{ color: '#111827' }}>{t('performance.title')} </span>
+          <span style={{ color: '#F97316' }}>{t('performance.titleHighlight')}</span>
         </h1>
         <p style={{ margin: '6px 0 0', fontSize: 13, color: '#6B7280' }}>
-          Seu histórico detalhado de palpites neste bolão.
+          {t('performance.subtitle')}
         </p>
       </div>
 
       {total === 0 ? (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: 280, gap: 12 }}>
           <TrendingUp size={48} color="#E5E7EB" />
-          <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: '#374151' }}>Nenhum resultado disponível ainda</p>
-          <p style={{ margin: 0, fontSize: 12, color: '#6B7280' }}>Os dados aparecem quando os primeiros jogos terminarem.</p>
+          <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: '#374151' }}>{t('performance.preCopa')}</p>
+          <p style={{ margin: 0, fontSize: 12, color: '#6B7280' }}>{t('performance.preCopaDesc')}</p>
         </div>
       ) : (
         <>
@@ -155,16 +157,16 @@ export function Performance({ poolId }: Props) {
               </div>
 
               <div style={{ flex: 1 }}>
-                <p style={{ margin: 0, fontSize: 10, fontWeight: 700, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Aproveitamento geral</p>
+                <p style={{ margin: 0, fontSize: 10, fontWeight: 700, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.12em' }}>{t('performance.hitRate')}</p>
                 <p style={{ margin: '6px 0 4px', fontSize: 32, fontWeight: 900, color: '#111827', lineHeight: 1 }}>{rate}<span style={{ fontSize: 16, color: '#6B7280' }}>%</span></p>
-                <p style={{ margin: 0, fontSize: 12, color: '#9CA3AF' }}>{exact + correct} acertos em {total} jogo{total !== 1 ? 's' : ''} avaliado{total !== 1 ? 's' : ''}</p>
+                <p style={{ margin: 0, fontSize: 12, color: '#9CA3AF' }}>{t('performance.overallHits', { hits: exact + correct, total, count: total })}</p>
               </div>
 
               <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
                 {([
-                  { icon: '✅', count: exact,   label: 'Placares exatos',    color: '#16A34A' },
-                  { icon: '🟡', count: correct, label: 'Resultados certos',  color: '#D97706' },
-                  { icon: '❌', count: wrong,   label: 'Erros',              color: '#6B7280' },
+                  { icon: '✅', count: exact,   label: t('performance.exactScore'),    color: '#16A34A' },
+                  { icon: '🟡', count: correct, label: t('performance.correctResult'), color: '#D97706' },
+                  { icon: '❌', count: wrong,   label: t('performance.wrong'),         color: '#6B7280' },
                 ] as const).map(item => (
                   <div key={item.label} style={{ textAlign: 'center', minWidth: 64 }}>
                     <div style={{ fontSize: 20, marginBottom: 4 }}>{item.icon}</div>
@@ -179,38 +181,38 @@ export function Performance({ poolId }: Props) {
             <div className="card" style={{ padding: 20, textAlign: 'center' }}>
               <Zap size={22} color="#F97316" style={{ marginBottom: 8 }} />
               <p style={{ margin: 0, fontSize: 32, fontWeight: 900, color: '#F97316', lineHeight: 1 }}>{curStreak}</p>
-              <p style={{ margin: '6px 0 0', fontSize: 10, fontWeight: 700, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Sequência atual</p>
+              <p style={{ margin: '6px 0 0', fontSize: 10, fontWeight: 700, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.1em' }}>{t('performance.currentStreak')}</p>
             </div>
 
             {/* Best streak */}
             <div className="card" style={{ padding: 20, textAlign: 'center' }}>
               <Award size={22} color="#D97706" style={{ marginBottom: 8 }} />
               <p style={{ margin: 0, fontSize: 32, fontWeight: 900, color: '#D97706', lineHeight: 1 }}>{maxStreak}</p>
-              <p style={{ margin: '6px 0 0', fontSize: 10, fontWeight: 700, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Melhor sequência</p>
+              <p style={{ margin: '6px 0 0', fontSize: 10, fontWeight: 700, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.1em' }}>{t('performance.bestStreak')}</p>
             </div>
 
             {/* Total evaluated */}
             <div className="card" style={{ padding: 20, textAlign: 'center' }}>
               <Target size={22} color="#22C55E" style={{ marginBottom: 8 }} />
               <p style={{ margin: 0, fontSize: 32, fontWeight: 900, color: '#22C55E', lineHeight: 1 }}>{total}</p>
-              <p style={{ margin: '6px 0 0', fontSize: 10, fontWeight: 700, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Jogos avaliados</p>
+              <p style={{ margin: '6px 0 0', fontSize: 10, fontWeight: 700, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.1em' }}>{t('performance.streaks')}</p>
             </div>
           </div>
 
           {/* Top teams */}
           {topTeams.length > 0 && (
             <div className="card" style={{ padding: 20 }}>
-              <p className="section-label">Times que mais acerto</p>
+              <p className="section-label">{t('performance.accuracy')}</p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {topTeams.map((t, i) => (
+                {topTeams.map((t_item, i) => (
                   <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <FlagImg isoCode={t.isoCode} name={t.name} />
-                    <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.name}</span>
+                    <FlagImg isoCode={t_item.isoCode} name={t_item.name} />
+                    <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t_item.name}</span>
                     <div style={{ width: 100, height: 5, background: '#E5E7EB', borderRadius: 3, overflow: 'hidden', flexShrink: 0 }}>
-                      <div style={{ width: `${t.pct}%`, height: '100%', background: t.pct >= 70 ? '#22C55E' : t.pct >= 40 ? '#F97316' : '#EF4444', borderRadius: 3, transition: 'width 0.6s ease' }} />
+                      <div style={{ width: `${t_item.pct}%`, height: '100%', background: t_item.pct >= 70 ? '#22C55E' : t_item.pct >= 40 ? '#F97316' : '#EF4444', borderRadius: 3, transition: 'width 0.6s ease' }} />
                     </div>
                     <span style={{ fontSize: 11, fontWeight: 800, color: '#374151', minWidth: 60, textAlign: 'right', whiteSpace: 'nowrap', flexShrink: 0 }}>
-                      {t.pct}% <span style={{ fontWeight: 400, color: '#9CA3AF' }}>({t.hit}/{t.total})</span>
+                      {t_item.pct}% <span style={{ fontWeight: 400, color: '#9CA3AF' }}>({t('performance.accuracyOf', { hits: t_item.hit, total: t_item.total })})</span>
                     </span>
                   </div>
                 ))}
@@ -221,7 +223,7 @@ export function Performance({ poolId }: Props) {
           {/* Recent history */}
           {recent.length > 0 && (
             <div className="card" style={{ padding: 20 }}>
-              <p className="section-label">Histórico recente</p>
+              <p className="section-label">{t('performance.recentHistory')}</p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 {recent.map((f, i) => {
                   const rs = RS[f.result];
@@ -235,12 +237,12 @@ export function Performance({ poolId }: Props) {
                         <p style={{ margin: '2px 0 0', fontSize: 10, color: '#6B7280' }}>{formatBrazilDate(f.match.kickoffAt)}</p>
                       </div>
                       <div style={{ textAlign: 'center', flexShrink: 0 }}>
-                        <p style={{ margin: 0, fontSize: 9, color: '#9CA3AF' }}>MEU PALPITE</p>
+                        <p style={{ margin: 0, fontSize: 9, color: '#9CA3AF' }}>{t('performance.colBet')}</p>
                         <p style={{ margin: '1px 0 0', fontSize: 13, fontWeight: 800, color: rs.color }}>{f.ph}×{f.pa}</p>
                       </div>
                       <div style={{ width: 1, height: 28, background: '#E5E7EB', flexShrink: 0 }} />
                       <div style={{ textAlign: 'center', flexShrink: 0 }}>
-                        <p style={{ margin: 0, fontSize: 9, color: '#9CA3AF' }}>RESULTADO</p>
+                        <p style={{ margin: 0, fontSize: 9, color: '#9CA3AF' }}>{t('performance.colResult')}</p>
                         <p style={{ margin: '1px 0 0', fontSize: 13, fontWeight: 800, color: '#111827' }}>{f.ah}×{f.aa}</p>
                       </div>
                     </div>

@@ -1,4 +1,5 @@
-﻿import { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { apiGet, apiPost, apiPut } from '../services/api';
 import type { Match, Team } from '../types';
 import { formatBrazilDate, formatBrazilTime } from '../utils/timezone';
@@ -9,6 +10,7 @@ type Props = { poolId?: string };
 type Msg = { type: 'ok' | 'err'; text: string };
 
 export function AdminPanel({ poolId }: Props) {
+  const { t } = useTranslation();
   const [matches, setMatches] = useState<Match[]>([]);
   const [allTeams, setAllTeams] = useState<Team[]>([]);
   const [loading, setLoading] = useState(true);
@@ -40,15 +42,15 @@ export function AdminPanel({ poolId }: Props) {
     if (!s) return;
     const home = parseInt(s.home);
     const away = parseInt(s.away);
-    if (isNaN(home) || isNaN(away)) return flash('err', 'Placar inválido.');
+    if (isNaN(home) || isNaN(away)) return flash('err', t('admin.invalidScore'));
     try {
       await apiPost(`/admin/matches/${match.id}/result`, { homeScore: home, awayScore: away });
       setMatches(prev => prev.map(m =>
         m.id === match.id ? { ...m, homeScore: home, awayScore: away, isFinished: true } : m
       ));
-      flash('ok', `Resultado de ${match.homeTeam.code} × ${match.awayTeam.code} salvo!`);
+      flash('ok', t('admin.resultSaved', { home: match.homeTeam.code, away: match.awayTeam.code }));
     } catch {
-      flash('err', 'Erro ao salvar resultado.');
+      flash('err', t('admin.resultError'));
     }
   }
 
@@ -57,34 +59,34 @@ export function AdminPanel({ poolId }: Props) {
     const body: Record<string, string> = {};
     if (s.homeTeamId) body.homeTeamId = s.homeTeamId;
     if (s.awayTeamId) body.awayTeamId = s.awayTeamId;
-    if (!body.homeTeamId && !body.awayTeamId) return flash('err', 'Selecione ao menos um time.');
+    if (!body.homeTeamId && !body.awayTeamId) return flash('err', t('admin.selectTeam'));
     try {
       await apiPut(`/admin/matches/${matchId}/teams`, body);
       const updated = await apiGet<Match[]>('/matches');
       setMatches(updated);
-      flash('ok', 'Times atualizados!');
+      flash('ok', t('admin.teamsUpdated'));
     } catch {
-      flash('err', 'Erro ao atualizar times.');
+      flash('err', t('admin.teamsError'));
     }
   }
 
   async function handleRecalculate() {
-    if (!poolId) return flash('err', 'Selecione um bolão primeiro.');
+    if (!poolId) return flash('err', t('admin.noPool'));
     try {
       await apiPost(`/admin/recalculate/${poolId}`, {});
-      flash('ok', 'Ranking recalculado com sucesso!');
+      flash('ok', t('admin.recalcSuccess'));
     } catch {
-      flash('err', 'Erro ao recalcular ranking.');
+      flash('err', t('admin.recalcError'));
     }
   }
 
   async function handleScoreGroupPredictions() {
-    if (!poolId) return flash('err', 'Selecione um bolão primeiro.');
+    if (!poolId) return flash('err', t('admin.noPool'));
     try {
       await apiPost(`/admin/score-group-predictions/${poolId}`, {});
-      flash('ok', 'Palpites de classificação pontuados!');
+      flash('ok', t('admin.groupsScoredSuccess'));
     } catch {
-      flash('err', 'Erro ao pontuar palpites de grupo.');
+      flash('err', t('admin.groupsScoredError'));
     }
   }
 
@@ -96,10 +98,10 @@ export function AdminPanel({ poolId }: Props) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
       <div>
         <h1 style={{ margin: 0, fontSize: 30, fontWeight: 900, fontStyle: 'italic', letterSpacing: '-0.5px' }}>
-          <span style={{ color: '#111827' }}>PAINEL </span>
-          <span style={{ color: '#EF4444' }}>ADMIN</span>
+          <span style={{ color: '#111827' }}>{t('admin.title')} </span>
+          <span style={{ color: '#EF4444' }}>{t('admin.titleHighlight')}</span>
         </h1>
-        <p style={{ margin: '6px 0 0', fontSize: 13, color: '#6B7280' }}>Gerenciamento de resultados e pontuações.</p>
+        <p style={{ margin: '6px 0 0', fontSize: 13, color: '#6B7280' }}>{t('admin.subtitle')}</p>
       </div>
 
       {msg && (
@@ -112,23 +114,23 @@ export function AdminPanel({ poolId }: Props) {
       {/* Admin actions */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 12 }}>
         <button onClick={handleRecalculate} style={actionBtnStyle('#F97316')}>
-          <RefreshCw size={16} /> Recalcular Ranking
+          <RefreshCw size={16} /> {t('admin.recalcBtn')}
         </button>
         <button onClick={handleScoreGroupPredictions} style={actionBtnStyle('#A855F7')}>
-          <BarChart2 size={16} /> Pontuar Grupos
+          <BarChart2 size={16} /> {t('admin.scoreGroupsBtn')}
         </button>
       </div>
 
       {loading ? (
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: '#6B7280', fontSize: 14 }}>
-          <div className="spinner" style={{ width: 18, height: 18 }} /> Carregando jogos...
+          <div className="spinner" style={{ width: 18, height: 18 }} /> {t('admin.loading')}
         </div>
       ) : (
         <>
           {/* Upcoming matches — set results */}
           {upcomingMatches.length > 0 && (
             <div className="card" style={{ padding: 20 }}>
-              <p className="section-label">Registrar Resultado</p>
+              <p className="section-label">{t('admin.registerResult')}</p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {upcomingMatches.map(m => (
                   <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 0', borderBottom: '1px solid #E5E7EB50', flexWrap: 'wrap' }}>
@@ -137,7 +139,7 @@ export function AdminPanel({ poolId }: Props) {
                     </span>
                     <span style={{ fontWeight: 700, color: '#111827', fontSize: 13, flex: 1, minWidth: 140 }}>
                       {m.homeTeam.code} × {m.awayTeam.code}
-                      {m.groupName && <span style={{ marginLeft: 6, fontSize: 10, color: '#6B7280' }}>Grupo {m.groupName}</span>}
+                      {m.groupName && <span style={{ marginLeft: 6, fontSize: 10, color: '#6B7280' }}>{t('admin.groupBadge', { name: m.groupName })}</span>}
                     </span>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                       <input
@@ -158,7 +160,7 @@ export function AdminPanel({ poolId }: Props) {
                         disabled={!scores[m.id]?.home && scores[m.id]?.home !== '0'}
                         style={{ padding: '6px 14px', background: '#22C55E', border: 'none', borderRadius: 7, color: '#F9FAFB', fontSize: 11, fontWeight: 800, cursor: 'pointer', letterSpacing: '0.06em' }}
                       >
-                        SALVAR
+                        {t('admin.saveResult')}
                       </button>
                     </div>
                   </div>
@@ -172,7 +174,7 @@ export function AdminPanel({ poolId }: Props) {
             <div className="card" style={{ padding: 20 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
                 <Users size={14} color="#D97706" />
-                <p className="section-label" style={{ margin: 0 }}>Avançar Times no Mata-Mata</p>
+                <p className="section-label" style={{ margin: 0 }}>{t('admin.advanceTeams')}</p>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {tbdMatches.map(m => (
@@ -186,7 +188,7 @@ export function AdminPanel({ poolId }: Props) {
                           onChange={e => setTbdAssign(p => ({ ...p, [m.id]: { ...p[m.id], homeTeamId: e.target.value } }))}
                           style={selectStyle}
                         >
-                          <option value="">— Casa —</option>
+                          <option value="">{t('admin.homeOption')}</option>
                           {allTeams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
                         </select>
                       )}
@@ -200,7 +202,7 @@ export function AdminPanel({ poolId }: Props) {
                           onChange={e => setTbdAssign(p => ({ ...p, [m.id]: { ...p[m.id], awayTeamId: e.target.value } }))}
                           style={selectStyle}
                         >
-                          <option value="">— Fora —</option>
+                          <option value="">{t('admin.awayOption')}</option>
                           {allTeams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
                         </select>
                       )}
@@ -211,7 +213,7 @@ export function AdminPanel({ poolId }: Props) {
                         onClick={() => handleSetTeams(m.id)}
                         style={{ padding: '6px 14px', background: '#D97706', border: 'none', borderRadius: 7, color: '#F9FAFB', fontSize: 11, fontWeight: 800, cursor: 'pointer' }}
                       >
-                        AVANÇAR
+                        {t('admin.advanceBtn')}
                       </button>
                     </div>
                   </div>
@@ -223,7 +225,7 @@ export function AdminPanel({ poolId }: Props) {
           {/* Finished matches summary */}
           {finishedMatches.length > 0 && (
             <div className="card" style={{ padding: 20 }}>
-              <p className="section-label">Resultados Registrados ({finishedMatches.length})</p>
+              <p className="section-label">{t('admin.resultsSection', { count: finishedMatches.length })}</p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                 {finishedMatches.slice(0, 12).map((m, i) => (
                   <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '7px 0', borderBottom: i < 11 ? '1px solid #E5E7EB80' : 'none', fontSize: 12 }}>
@@ -231,11 +233,11 @@ export function AdminPanel({ poolId }: Props) {
                     <span style={{ flex: 1, fontWeight: 600, color: '#111827' }}>
                       {m.homeTeam.code} {m.homeScore} × {m.awayScore} {m.awayTeam.code}
                     </span>
-                    <span style={{ fontSize: 9, background: '#22C55E18', color: '#22C55E', padding: '2px 8px', borderRadius: 20, fontWeight: 700, letterSpacing: '0.08em' }}>FINAL</span>
+                    <span style={{ fontSize: 9, background: '#22C55E18', color: '#22C55E', padding: '2px 8px', borderRadius: 20, fontWeight: 700, letterSpacing: '0.08em' }}>{t('common.final')}</span>
                   </div>
                 ))}
                 {finishedMatches.length > 12 && (
-                  <p style={{ margin: '8px 0 0', fontSize: 11, color: '#6B7280' }}>+{finishedMatches.length - 12} outros resultados</p>
+                  <p style={{ margin: '8px 0 0', fontSize: 11, color: '#6B7280' }}>{t('admin.moreResults', { count: finishedMatches.length - 12 })}</p>
                 )}
               </div>
             </div>

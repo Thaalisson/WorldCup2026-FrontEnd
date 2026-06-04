@@ -1,11 +1,21 @@
-﻿import { useState } from 'react';
+import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import { apiPost, setStoredToken } from '../services/api';
+import { setLanguage, getLanguage } from '../i18n';
 
 type Props = { onGoToRegister: () => void };
 
 export function Login({ onGoToRegister }: Props) {
+  const { t } = useTranslation();
   const { login } = useAuth();
+  const [lang, setLang] = useState<'pt' | 'en'>(getLanguage);
+
+  function toggleLang() {
+    const next = lang === 'pt' ? 'en' : 'pt';
+    setLanguage(next);
+    setLang(next);
+  }
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -22,7 +32,7 @@ export function Login({ onGoToRegister }: Props) {
       setStoredToken(data.token);
       login({ id: data.userId, name: data.name, email: data.email, isAdmin: data.isAdmin ?? false });
     } catch {
-      setError('E-mail ou senha inválidos.');
+      setError(t('auth.invalidCredentials'));
     } finally {
       setLoading(false);
     }
@@ -39,6 +49,32 @@ export function Login({ onGoToRegister }: Props) {
       position: 'relative',
       overflow: 'hidden',
     }}>
+      {/* Language toggle — fixed top-right */}
+      <button
+        onClick={toggleLang}
+        title={lang === 'pt' ? 'Switch to English' : 'Mudar para Português'}
+        style={{
+          position: 'fixed', top: 16, right: 16, zIndex: 50,
+          background: '#FFFFFF', border: '1px solid #E5E7EB',
+          borderRadius: 8, padding: '6px 12px',
+          fontSize: 12, fontWeight: 800, color: '#374151',
+          cursor: 'pointer', letterSpacing: '0.05em',
+          boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
+          transition: 'border-color 0.15s, color 0.15s, box-shadow 0.15s',
+          display: 'flex', alignItems: 'center', gap: 6,
+        }}
+        onMouseEnter={e => { const b = e.currentTarget as HTMLButtonElement; b.style.borderColor = '#F97316'; b.style.color = '#F97316'; b.style.boxShadow = '0 2px 8px rgba(249,115,22,0.2)'; }}
+        onMouseLeave={e => { const b = e.currentTarget as HTMLButtonElement; b.style.borderColor = '#E5E7EB'; b.style.color = '#374151'; b.style.boxShadow = '0 1px 4px rgba(0,0,0,0.08)'; }}
+      >
+        <img
+          src={`https://flagcdn.com/w20/${lang === 'pt' ? 'ca' : 'br'}.png`}
+          width={18} height={13}
+          style={{ borderRadius: 2, objectFit: 'cover', display: 'block', flexShrink: 0 }}
+          alt=""
+        />
+        {lang === 'pt' ? 'EN' : 'PT'}
+      </button>
+
       <div style={{ position: 'absolute', top: -120, left: -120, width: 400, height: 400, background: 'radial-gradient(circle, #F9731622 0%, transparent 70%)', pointerEvents: 'none' }} />
       <div style={{ position: 'absolute', bottom: -120, right: -120, width: 400, height: 400, background: 'radial-gradient(circle, #F9731614 0%, transparent 70%)', pointerEvents: 'none' }} />
 
@@ -68,13 +104,13 @@ export function Login({ onGoToRegister }: Props) {
             <span style={{ color: '#F97316', fontStyle: 'italic' }}>2026</span>
           </h1>
           <p style={{ color: '#6B7280', fontSize: 13, margin: '0 0 28px', lineHeight: 1.5 }}>
-            Sua jornada épica rumo ao<br />campeonato mundial começa aqui.
+            {t('auth.loginSubtitle')}
           </p>
 
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 12, textAlign: 'left' }}>
             <input
               type="email"
-              placeholder="seu@email.com"
+              placeholder={t('auth.emailPlaceholder')}
               value={email}
               onChange={e => setEmail(e.target.value)}
               required
@@ -82,7 +118,7 @@ export function Login({ onGoToRegister }: Props) {
             />
             <input
               type="password"
-              placeholder="Senha"
+              placeholder={t('auth.passwordPlaceholder')}
               value={password}
               onChange={e => setPassword(e.target.value)}
               required
@@ -94,23 +130,23 @@ export function Login({ onGoToRegister }: Props) {
               </p>
             )}
             <button type="submit" disabled={loading} className="btn-primary" style={{ marginTop: 4 }}>
-              {loading ? 'ENTRANDO...' : 'ENTRAR NO BOLÃO'}
+              {loading ? t('auth.loggingIn') : t('auth.loginButton')}
             </button>
           </form>
 
           <p style={{ marginTop: 20, fontSize: 13, color: '#6B7280' }}>
-            Não tem conta?{' '}
+            {t('auth.noAccount')}{' '}
             <button
               onClick={onGoToRegister}
               style={{ background: 'none', border: 'none', color: '#F97316', cursor: 'pointer', fontWeight: 700, padding: 0, fontSize: 13 }}
             >
-              Criar conta
+              {t('auth.createAccount')}
             </button>
           </p>
         </div>
 
-        <p style={{ textAlign: 'center', marginTop: 20, fontSize: 11, color: '#E5E7EB', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
-          FIFA World Cup 2026 · Jun 11 – Jul 19
+        <p style={{ textAlign: 'center', marginTop: 20, fontSize: 10, color: '#9CA3AF', letterSpacing: '0.14em', textTransform: 'uppercase', fontWeight: 600 }}>
+          {t('app.tournament')}
         </p>
       </div>
     </div>

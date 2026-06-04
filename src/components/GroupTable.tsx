@@ -1,4 +1,5 @@
-﻿import type { GroupStanding } from '../types';
+﻿import { useTranslation } from 'react-i18next';
+import type { GroupStanding } from '../types';
 
 type Props = {
   groupName: string;
@@ -6,24 +7,25 @@ type Props = {
 };
 
 export function GroupTable({ groupName, teams }: Props) {
+  const { t } = useTranslation();
   return (
     <div className="card" style={{ padding: 20 }}>
       <p style={{ margin: '0 0 14px', fontSize: 11, fontWeight: 800, color: '#F97316', textTransform: 'uppercase', letterSpacing: '0.14em' }}>
-        Grupo {groupName}
+        {t('common.group')} {groupName}
       </p>
       <div className="table-scroll">
       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
         <thead>
           <tr>
-            <th style={thStyle('#6B7280', 'left')}>Seleção</th>
-            <th style={thStyle('#F97316')}>Pts</th>
-            <th style={thStyle()}>J</th>
-            <th style={thStyle('#22C55E')}>V</th>
-            <th style={thStyle()}>E</th>
-            <th style={thStyle('#EF4444')}>D</th>
-            <th style={thStyle()}>GP</th>
-            <th style={thStyle()}>GC</th>
-            <th style={thStyle()}>SG</th>
+            <th style={thStyle('#6B7280', 'left')}>{t('groups.colTeam')}</th>
+            <th style={thStyle('#F97316')}>{t('groups.colPoints')}</th>
+            <th style={thStyle()}>{t('groups.colPlayed')}</th>
+            <th style={thStyle('#22C55E')}>{t('groups.colWins')}</th>
+            <th style={thStyle()}>{t('groups.colDraws')}</th>
+            <th style={thStyle('#EF4444')}>{t('groups.colLosses')}</th>
+            <th style={thStyle()}>{t('groups.colGF')}</th>
+            <th style={thStyle()}>{t('groups.colGA')}</th>
+            <th style={thStyle()}>{t('groups.colGD')}</th>
           </tr>
         </thead>
         <tbody>
@@ -57,7 +59,7 @@ export function GroupTable({ groupName, teams }: Props) {
       </table>
       </div>
       <p style={{ margin: '10px 0 0', fontSize: 10, color: '#6B728060' }}>
-        Top 2 avançam para as oitavas de final.
+        {t('groups.top2Qualify')}
       </p>
     </div>
   );

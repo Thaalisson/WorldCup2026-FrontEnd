@@ -1,4 +1,5 @@
-﻿import { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { Match } from '../types';
 import { formatBrazilDate, formatBrazilTime, isMatchLocked } from '../utils/timezone';
 import { Lock, CheckCircle, Clock } from 'lucide-react';
@@ -12,12 +13,12 @@ function useCountdown(kickoffAt: string) {
     const m = Math.floor((diff % 3600000) / 60000);
     return { d, h, m, urgent: diff < 7200000 }; // urgent < 2h
   }
-  const [t, setT] = useState(calc);
+  const [countdown, setCountdown] = useState(calc);
   useEffect(() => {
-    const id = setInterval(() => setT(calc()), 30000);
+    const id = setInterval(() => setCountdown(calc()), 30000);
     return () => clearInterval(id);
   }, [kickoffAt]);
-  return t;
+  return countdown;
 }
 
 type Props = {
@@ -45,8 +46,9 @@ function FlagImg({ isoCode, name }: { isoCode?: string; name: string }) {
 }
 
 export function MatchCard({ match, home, away, isSaved, isDirty, onChange, onBlur }: Props) {
+  const { t } = useTranslation();
   const locked = match.isFinished || isMatchLocked(match.kickoffAt);
-  const stageLabel = match.groupName ? `GRUPO ${match.groupName}` : match.stage?.toUpperCase();
+  const stageLabel = match.groupName ? t('common.group') + ' ' + match.groupName : match.stage?.toUpperCase();
   const dateStr = formatBrazilDate(match.kickoffAt);
   const timeStr = formatBrazilTime(match.kickoffAt);
   const countdown = useCountdown(match.kickoffAt);
@@ -95,10 +97,10 @@ export function MatchCard({ match, home, away, isSaved, isDirty, onChange, onBlu
             <span className={`countdown-chip ${countdown.urgent ? 'urgent' : 'normal'}`}>
               <Clock size={8} />
               {countdown.d > 0
-                ? `${countdown.d}d ${countdown.h}h`
+                ? t('common.countdownDaysHours', { d: countdown.d, h: countdown.h })
                 : countdown.h > 0
-                ? `${countdown.h}h ${countdown.m}min`
-                : `${countdown.m}min`}
+                ? t('common.countdownHoursMin', { h: countdown.h, m: countdown.m })
+                : t('common.countdownMin', { m: countdown.m })}
             </span>
           )}
         </div>
@@ -125,7 +127,7 @@ export function MatchCard({ match, home, away, isSaved, isDirty, onChange, onBlu
           ) : locked ? (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, color: '#D1D5DB' }}>
               <Lock style={{ width: 14, height: 14 }} />
-              <span style={{ fontSize: 9, letterSpacing: '0.08em' }}>BLOQ.</span>
+              <span style={{ fontSize: 9, letterSpacing: '0.08em' }}>{t('matchCard.locked')}</span>
             </div>
           ) : (
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -174,17 +176,17 @@ export function MatchCard({ match, home, away, isSaved, isDirty, onChange, onBlu
         const wrong   = predDir !== actDir;
         if (exact) return (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, fontSize: 10, fontWeight: 800, color: '#16A34A', background: '#F0FDF4', borderRadius: 6, padding: '4px 0' }}>
-            ✅ Placar exato!
+            {t('matchCard.exactScore')}
           </div>
         );
         if (correct) return (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, fontSize: 10, fontWeight: 800, color: '#D97706', background: '#FFFBEB', borderRadius: 6, padding: '4px 0' }}>
-            🟡 Resultado certo
+            {t('matchCard.correctResult')}
           </div>
         );
         if (wrong) return (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, fontSize: 10, fontWeight: 700, color: '#9CA3AF', background: '#F9FAFB', borderRadius: 6, padding: '4px 0' }}>
-            ❌ Errou
+            {t('matchCard.wrong')}
           </div>
         );
         return null;
@@ -193,7 +195,7 @@ export function MatchCard({ match, home, away, isSaved, isDirty, onChange, onBlu
       {/* Saved tag for locked (not finished) matches */}
       {locked && !match.isFinished && isSaved && (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, fontSize: 10, color: '#22C55E', fontWeight: 700 }}>
-          <CheckCircle size={11} /> Palpite salvo
+          <CheckCircle size={11} /> {t('matchCard.betSaved')}
         </div>
       )}
     </div>

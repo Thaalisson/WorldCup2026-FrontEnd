@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { apiGet } from '../services/api';
 import type { Team, GroupStanding } from '../types';
 
@@ -17,6 +18,7 @@ function FlagImg({ isoCode, name }: { isoCode?: string; name: string }) {
 }
 
 function GroupCard({ group, rows }: { group: string; rows: GroupStanding[] }) {
+  const { t } = useTranslation();
   const hasData = rows.some(r => r.played > 0);
 
   return (
@@ -25,7 +27,7 @@ function GroupCard({ group, rows }: { group: string; rows: GroupStanding[] }) {
       {/* ── Card header ── */}
       <div style={{ padding: '12px 16px 10px', borderBottom: '1px solid #F3F4F6' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <span style={{ fontSize: 13, fontWeight: 800, color: '#111827' }}>Classificação</span>
+          <span style={{ fontSize: 13, fontWeight: 800, color: '#111827' }}>{t('groups.classification')}</span>
           <span style={{
             fontSize: 9, fontWeight: 800, letterSpacing: '0.12em',
             padding: '2px 8px', borderRadius: 20,
@@ -35,7 +37,7 @@ function GroupCard({ group, rows }: { group: string; rows: GroupStanding[] }) {
           </span>
         </div>
         <p style={{ margin: '3px 0 0', fontSize: 11, color: '#9CA3AF' }}>
-          Copa do Mundo 2026
+          {t('groups.worldCup')}
         </p>
       </div>
 
@@ -44,14 +46,14 @@ function GroupCard({ group, rows }: { group: string; rows: GroupStanding[] }) {
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
           <thead>
             <tr style={{ background: '#FAFAFA' }}>
-              <th style={th(28, 'center')}>#</th>
-              <th style={{ ...th(undefined, 'left'), paddingLeft: 4, minWidth: 130 }}>Equipe</th>
-              <th style={th(36)}>PJ</th>
-              <th style={th(36, 'center', '#22C55E')}>VIT</th>
-              <th style={th(36)}>E</th>
-              <th style={th(36, 'center', '#EF4444')}>DER</th>
-              <th style={th(36)}>SG</th>
-              <th style={th(40, 'center', '#F97316')}>Pts</th>
+              <th style={th(28, 'center')}>{t('groups.colPos')}</th>
+              <th style={{ ...th(undefined, 'left'), paddingLeft: 4, minWidth: 130 }}>{t('groups.colTeam')}</th>
+              <th style={th(36)}>{t('groups.colPlayed')}</th>
+              <th style={th(36, 'center', '#22C55E')}>{t('groups.colWins')}</th>
+              <th style={th(36)}>{t('groups.colDraws')}</th>
+              <th style={th(36, 'center', '#EF4444')}>{t('groups.colLosses')}</th>
+              <th style={th(36)}>{t('groups.colGD')}</th>
+              <th style={th(40, 'center', '#F97316')}>{t('groups.colPoints')}</th>
             </tr>
           </thead>
           <tbody>
@@ -130,7 +132,7 @@ function GroupCard({ group, rows }: { group: string; rows: GroupStanding[] }) {
           display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
           fontSize: 8, fontWeight: 800, color: '#22C55E', flexShrink: 0,
         }}>1</div>
-        <span style={{ fontSize: 10, color: '#9CA3AF' }}>Top 2 classificam para as oitavas de final</span>
+        <span style={{ fontSize: 10, color: '#9CA3AF' }}>{t('groups.top2Qualify')}</span>
       </div>
     </div>
   );
@@ -162,6 +164,7 @@ function td(color = '#374151', highlight = false): React.CSSProperties {
 }
 
 export function Teams() {
+  const { t } = useTranslation();
   const [teams, setTeams] = useState<Team[]>([]);
   const [standings, setStandings] = useState<Record<string, GroupStanding[]>>({});
   const [loading, setLoading] = useState(true);
@@ -202,7 +205,7 @@ export function Teams() {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 300, gap: 12, color: '#6B7280' }}>
         <div className="spinner" />
-        <span style={{ fontSize: 13 }}>Carregando seleções...</span>
+        <span style={{ fontSize: 13 }}>{t('teams.loading')}</span>
       </div>
     );
   }
@@ -211,8 +214,8 @@ export function Teams() {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: 240, gap: 10, color: '#9CA3AF' }}>
         <span style={{ fontSize: 40 }}>⚽</span>
-        <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: '#374151' }}>Nenhuma seleção cadastrada</p>
-        <p style={{ margin: 0, fontSize: 12 }}>Um admin precisa importar os dados da Copa.</p>
+        <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: '#374151' }}>{t('teams.noTeams')}</p>
+        <p style={{ margin: 0, fontSize: 12 }}>{t('teams.noTeamsAdmin')}</p>
       </div>
     );
   }
@@ -224,11 +227,11 @@ export function Teams() {
       <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
         <div>
           <h1 style={{ margin: 0, fontSize: 28, fontWeight: 900, fontStyle: 'italic', letterSpacing: '-0.5px' }}>
-            <span style={{ color: '#111827' }}>SELEÇÕES </span>
-            <span style={{ color: '#F97316' }}>DA COPA</span>
+            <span style={{ color: '#111827' }}>{t('teams.title')}</span>
+            <span style={{ color: '#F97316' }}>{t('teams.titleHighlight')}</span>
           </h1>
           <p style={{ margin: '5px 0 0', fontSize: 13, color: '#6B7280' }}>
-            {groups.length} grupos · {teams.length} seleções classificadas
+            {t('teams.subtitle', { groups: groups.length, count: teams.length })}
           </p>
         </div>
 

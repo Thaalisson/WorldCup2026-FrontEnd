@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 const UNIT = 80; // slot height (H) + gap (G)
 const H = 72;    // match slot height (2 team rows)
@@ -110,6 +111,7 @@ function TeamRow({
 }: {
   team: Team; isWinner?: boolean; isLoser?: boolean; canClick: boolean; onClick: () => void;
 }) {
+  const { t } = useTranslation();
   const hasReal = !!team.name;
   const isPlaceholder = team.label === '—';
   const bg = isWinner ? '#F0FDF4' : isLoser ? '#F9FAFB' : 'transparent';
@@ -117,7 +119,7 @@ function TeamRow({
   return (
     <button
       onClick={canClick ? onClick : undefined}
-      title={canClick ? `Avançar ${team.name || team.label}` : undefined}
+      title={canClick ? t('knockout.advanceTitle', { team: team.name || team.label }) : undefined}
       style={{
         display: 'flex', alignItems: 'center', gap: 6,
         padding: '7px 10px', width: '100%',
@@ -280,6 +282,7 @@ function HalfBracket({
 
 // ── Main component ────────────────────────────────────────────
 export function Knockout() {
+  const { t } = useTranslation();
   const [bracket, setBracket] = useState<BracketState>(initBracket);
 
   function handleAdvance(side: 'left' | 'right', roundIdx: number, matchIdx: number, winner: 'home' | 'away') {
@@ -289,8 +292,9 @@ export function Knockout() {
   const finalCenter = getCenter(3, 0); // SF is round 3, match 0
   const finalTop = finalCenter - H / 2;
 
-  const ROUND_NAMES_L = ['Avos de Final', 'Oitavas', 'Quartas', 'Semifinal'];
-  const ROUND_NAMES_R = ['Avos de Final', 'Oitavas', 'Quartas', 'Semifinal'];
+  const ROUND_NAMES = [t('knockout.r32'), t('knockout.r16'), t('knockout.qf'), t('knockout.sf')];
+  const ROUND_NAMES_L = ROUND_NAMES;
+  const ROUND_NAMES_R = ROUND_NAMES;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -299,11 +303,11 @@ export function Knockout() {
       <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
         <div>
           <h1 style={{ margin: 0, fontSize: 28, fontWeight: 900, fontStyle: 'italic', letterSpacing: '-0.5px' }}>
-            <span style={{ color: '#111827' }}>FASE </span>
-            <span style={{ color: '#F97316' }}>ELIMINATÓRIA</span>
+            <span style={{ color: '#111827' }}>{t('knockout.title')}</span>
+            <span style={{ color: '#F97316' }}>{t('knockout.titleHighlight')}</span>
           </h1>
           <p style={{ margin: '5px 0 0', fontSize: 13, color: '#6B7280' }}>
-            Clique em uma seleção para avançá-la na chave
+            {t('knockout.subtitle')}
           </p>
         </div>
         <button
@@ -314,7 +318,7 @@ export function Knockout() {
             cursor: 'pointer',
           }}
         >
-          Resetar chave
+          {t('knockout.resetBracket')}
         </button>
       </div>
 
@@ -326,10 +330,10 @@ export function Knockout() {
         <span style={{ fontSize: 16 }}>⏳</span>
         <div>
           <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: '#92400E' }}>
-            Times a definir
+            {t('knockout.tbdTitle')}
           </p>
           <p style={{ margin: 0, fontSize: 11, color: '#B45309' }}>
-            As vagas serão preenchidas automaticamente ao término da fase de grupos (a partir de 28 de jun). Por enquanto, clique nos confrontos para simular a chave.
+            {t('knockout.tbdDesc')}
           </p>
         </div>
       </div>
@@ -356,7 +360,7 @@ export function Knockout() {
             {/* Final + 3rd place column */}
             <div style={{ display: 'flex', flexDirection: 'column', flexShrink: 0, width: COL_W + 24 }}>
               <p style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.12em', color: '#F97316', textAlign: 'center', margin: '0 0 10px', textTransform: 'uppercase' }}>
-                🏆 Final
+                {t('knockout.finalLabel')}
               </p>
               <div style={{ position: 'relative', height: CONTAINER_H }}>
                 {/* Final match */}
@@ -373,7 +377,7 @@ export function Knockout() {
                 {/* 3rd place */}
                 <div style={{ position: 'absolute', top: finalTop + H + 32, left: 12 }}>
                   <p style={{ fontSize: 9, fontWeight: 700, color: '#9CA3AF', textAlign: 'center', margin: '0 0 6px', letterSpacing: '0.1em' }}>
-                    3° LUGAR
+                    {t('knockout.thirdPlace')}
                   </p>
                   <MatchSlot
                     match={bracket.third}
