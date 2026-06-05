@@ -211,6 +211,7 @@ function MainApp() {
               <select
                 value={activePoolId}
                 onChange={e => setActivePoolId(e.target.value)}
+                className="pool-selector"
                 style={{
                   background: '#F3F4F6',
                   border: '1px solid #E5E7EB',
@@ -222,6 +223,10 @@ function MainApp() {
                   outline: 'none',
                   cursor: 'pointer',
                   appearance: 'none',
+                  maxWidth: 180,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
                 }}
               >
                 {pools.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}

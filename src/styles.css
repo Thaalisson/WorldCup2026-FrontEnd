@@ -21,7 +21,8 @@
 }
 
 @layer base {
-  * { box-sizing: border-box; }
+  * { box-sizing: border-box; min-width: 0; }
+  html, body { max-width: 100%; overflow-x: hidden; }
   body {
     background: var(--bg);
     color: var(--text);
@@ -177,6 +178,9 @@
   /* Hide Criar/Entrar buttons from header on mobile */
   .header-pool-btns { display: none !important; }
 
+  /* Shrink pool selector on mobile */
+  .pool-selector { max-width: 130px !important; font-size: 11px !important; }
+
   /* Main padding */
   main { padding: 16px 12px !important; }
 
@@ -286,4 +290,23 @@
   .mobile-tab-bar { display: flex !important; }
   .header-right   { margin-left: auto; }
   main { padding-bottom: 80px !important; }
+}
+
+/* ── Horizontal chip scroll (no scrollbar visible) ─────────── */
+.chips-scroll {
+  display: flex;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  gap: 5px;
+  align-items: center;
+  padding-bottom: 2px;
+}
+.chips-scroll::-webkit-scrollbar { display: none; }
+.chips-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* ── Mobile card padding reduction ─────────────────────────── */
+@media (max-width: 480px) {
+  .card { padding: 14px !important; }
+  h1 { font-size: 24px !important; }
 }

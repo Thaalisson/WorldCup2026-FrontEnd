@@ -7,12 +7,17 @@ function toUtcDate(isoString: string): Date {
 
 const BRAZIL_TZ = 'America/Sao_Paulo';
 
+function getLocale(): string {
+  const saved = localStorage.getItem('bolao_lang');
+  return saved === 'en' ? 'en-US' : 'pt-BR';
+}
+
 export function formatBrazilDate(isoString: string): string {
-  return toUtcDate(isoString).toLocaleDateString('pt-BR', {
+  return toUtcDate(isoString).toLocaleDateString(getLocale(), {
     timeZone: BRAZIL_TZ,
     day: '2-digit',
     month: 'short',
-  });
+  }).toUpperCase();
 }
 
 export function formatBrazilTime(isoString: string): string {

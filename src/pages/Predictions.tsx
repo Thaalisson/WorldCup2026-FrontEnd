@@ -178,7 +178,7 @@ export function Predictions({ poolId }: Props) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
 
       {/* ── Header + Save bar ── */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
         <div>
           <h1 style={{ margin: 0, fontSize: 28, fontWeight: 900, fontStyle: 'italic', letterSpacing: '-0.5px' }}>
             <span style={{ color: '#111827' }}>{t('predictions.title')} </span>
@@ -253,8 +253,8 @@ export function Predictions({ poolId }: Props) {
 
         {/* Group filter */}
         {groups.length > 0 && (
-          <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', alignItems: 'center' }}>
-            <span style={{ fontSize: 10, fontWeight: 700, color: '#9CA3AF', letterSpacing: '0.1em', textTransform: 'uppercase', marginRight: 2 }}>{t('predictions.groupLabel')}</span>
+          <div className="chips-scroll">
+            <span style={{ fontSize: 10, fontWeight: 700, color: '#9CA3AF', letterSpacing: '0.1em', textTransform: 'uppercase', marginRight: 2, flexShrink: 0 }}>{t('predictions.groupLabel')}</span>
             <button
               onClick={() => setSelectedGroup(null)}
               style={{
