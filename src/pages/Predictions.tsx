@@ -116,7 +116,8 @@ export function Predictions({ poolId }: Props) {
   }
 
   const realMatches = matches.filter(m => m.homeTeam.name !== 'A Definir');
-  const upcoming = realMatches.filter(m => !m.isFinished);
+  const upcoming = realMatches.filter(m => !m.isFinished && !isMatchLocked(m.kickoffAt));
+  const awaitingResult = realMatches.filter(m => !m.isFinished && isMatchLocked(m.kickoffAt));
   const finished = realMatches.filter(m => m.isFinished);
 
   const groups = Array.from(
@@ -134,24 +135,25 @@ export function Predictions({ poolId }: Props) {
   const upcomingFiltered = applyFilters(upcoming);
   const finishedFiltered = applyFilters(finished);
 
-  const saveableCount = upcoming.filter(m => !isMatchLocked(m.kickoffAt)).length;
-  const savedCount = upcoming.filter(m => !isMatchLocked(m.kickoffAt) && savedIds.has(m.id) && !dirtyIds.has(m.id)).length;
+  const saveableCount = upcoming.length;
+  const savedCount = upcoming.filter(m => savedIds.has(m.id) && !dirtyIds.has(m.id)).length;
   const dirtyCount = dirtyIds.size;
 
-  // Agrupar próximos jogos por data
+  // Agrupar próximos jogos (abertos) por data
   const upcomingByDate: [string, Match[]][] = [];
   const dateMap: Record<string, Match[]> = {};
   upcomingFiltered.forEach(m => {
     const date = formatBrazilDate(m.kickoffAt);
     (dateMap[date] ??= []).push(m);
   });
-  // Manter ordem cronológica
   upcomingFiltered.forEach(m => {
     const date = formatBrazilDate(m.kickoffAt);
     if (!upcomingByDate.find(([d]) => d === date)) {
       upcomingByDate.push([date, dateMap[date]]);
     }
   });
+
+  const awaitingFiltered = applyFilters(awaitingResult);
 
   if (loading) {
     return (
@@ -309,10 +311,38 @@ export function Predictions({ poolId }: Props) {
         </section>
       ))}
 
-      {upcomingFiltered.length === 0 && selectedGroup && (
+      {upcomingFiltered.length === 0 && selectedGroup && upcoming.length > 0 && (
         <div style={{ textAlign: 'center', padding: '32px 0', color: '#9CA3AF', fontSize: 13 }}>
           {t('predictions.noMatchesForGroup', { group: selectedGroup })}
         </div>
+      )}
+
+      {/* ── Aguardando resultado (bloqueados, ainda não finalizados) ── */}
+      {awaitingFiltered.length > 0 && (
+        <section>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+            <p className="section-label" style={{ margin: 0, color: '#6B7280' }}>
+              {t('predictions.awaitingResult')}
+            </p>
+            <div style={{ flex: 1, height: 1, background: '#E5E7EB' }} />
+            <span style={{ fontSize: 10, color: '#9CA3AF' }}>
+              {t('predictions.matchCount', { count: awaitingFiltered.length })}
+            </span>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 12, opacity: 0.75 }}>
+            {awaitingFiltered.map(m => (
+              <MatchCard
+                key={m.id}
+                match={m}
+                home={scores[m.id]?.home ?? 0}
+                away={scores[m.id]?.away ?? 0}
+                isSaved={savedIds.has(m.id)}
+                isDirty={false}
+                onChange={() => {}}
+              />
+            ))}
+          </div>
+        </section>
       )}
 
       {/* ── Encerrados ── */}

@@ -215,14 +215,16 @@
     "savedSuccess_other": "{{count}} predictions saved successfully!",
     "savedPartial": "{{saved}} saved, {{skipped}} blocked.",
     "saveError": "Error saving. Please try again.",
-    "noMatchesForGroup": "No matches available for Group {{group}}."
+    "noMatchesForGroup": "No matches available for Group {{group}}.",
+    "awaitingResult": "Awaiting Result"
   },
   "matchCard": {
     "locked": "LOCK.",
     "exactScore": "✅ Exact score!",
     "correctResult": "🟡 Correct result",
     "wrong": "❌ Wrong",
-    "betSaved": "Prediction saved"
+    "betSaved": "Prediction saved",
+    "noBet": "No prediction"
   },
   "champion": {
     "title": "PRE-",

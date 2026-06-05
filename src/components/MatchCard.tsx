@@ -192,11 +192,17 @@ export function MatchCard({ match, home, away, isSaved, isDirty, onChange, onBlu
         return null;
       })()}
 
-      {/* Saved tag for locked (not finished) matches */}
-      {locked && !match.isFinished && isSaved && (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, fontSize: 10, color: '#22C55E', fontWeight: 700 }}>
-          <CheckCircle size={11} /> {t('matchCard.betSaved')}
-        </div>
+      {/* Saved / not-saved tag for locked (not finished) matches */}
+      {locked && !match.isFinished && (
+        isSaved ? (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, fontSize: 10, color: '#22C55E', fontWeight: 700 }}>
+            <CheckCircle size={11} /> {t('matchCard.betSaved')}
+          </div>
+        ) : (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, fontSize: 10, color: '#9CA3AF', fontWeight: 600, background: '#F9FAFB', borderRadius: 6, padding: '4px 0' }}>
+            {t('matchCard.noBet')}
+          </div>
+        )
       )}
     </div>
   );

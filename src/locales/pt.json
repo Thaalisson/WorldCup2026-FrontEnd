@@ -215,14 +215,16 @@
     "savedSuccess_other": "{{count}} palpites salvos com sucesso!",
     "savedPartial": "{{saved}} salvos, {{skipped}} bloqueados.",
     "saveError": "Erro ao salvar. Tente novamente.",
-    "noMatchesForGroup": "Nenhum jogo disponível para o Grupo {{group}}."
+    "noMatchesForGroup": "Nenhum jogo disponível para o Grupo {{group}}.",
+    "awaitingResult": "Aguardando Resultado"
   },
   "matchCard": {
     "locked": "BLOQ.",
     "exactScore": "✅ Placar exato!",
     "correctResult": "🟡 Resultado certo",
     "wrong": "❌ Errou",
-    "betSaved": "Palpite salvo"
+    "betSaved": "Palpite salvo",
+    "noBet": "Sem palpite"
   },
   "champion": {
     "title": "PRÉ-",
