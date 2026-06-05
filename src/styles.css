@@ -314,13 +314,16 @@
     border-radius: 14px !important;
   }
   .stat-icon { width: 26px !important; height: 26px !important; border-radius: 7px !important; }
-  .stat-value { font-size: 22px !important; }
-  .stat-label { font-size: 9px !important; }
-  .stat-sub { font-size: 10px !important; white-space: normal !important; line-height: 1.3; }
+  .stat-value { font-size: 20px !important; }
+  .stat-label { font-size: 9px !important; letter-spacing: 0.06em !important; }
+  /* Hide sub-text in mobile chips — keeps height small */
+  .stat-sub { display: none !important; }
   /* Hide chart card on mobile — needs horizontal space */
   .dashboard-chart-card { display: none !important; }
-  /* Bot grid: 2-col on mobile (progress + ranking) */
+  /* Bot grid: 1-col on mobile */
   .dashboard-bot-grid { grid-template-columns: 1fr !important; }
+  /* Dashboard main gap smaller */
+  .dashboard-gap { gap: 16px !important; }
 }
 
 /* ── Horizontal chip scroll (no scrollbar visible) ─────────── */

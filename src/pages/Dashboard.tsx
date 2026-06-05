@@ -287,20 +287,27 @@ export function Dashboard({ poolId, onGoToJogos, onGoToPrecopa, onGoToGroups, on
   ];
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? 14 : 24 }}>
 
       {/* ── Header ── */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
         <div>
-          <p style={{ margin: 0, fontSize: 11, color: '#6B7280', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase' }}>{t('dashboard.welcome')}</p>
-          <h1 style={{ margin: '4px 0 0', fontSize: 30, fontWeight: 900, fontStyle: 'italic', letterSpacing: '-0.5px', lineHeight: 1 }}>
+          <p style={{ margin: 0, fontSize: isMobile ? 10 : 11, color: '#6B7280', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase' }}>{t('dashboard.welcome')}</p>
+          <h1 style={{ margin: '2px 0 0', fontSize: isMobile ? 24 : 30, fontWeight: 900, fontStyle: 'italic', letterSpacing: '-0.5px', lineHeight: 1 }}>
             <span style={{ color: '#111827' }}>{user?.name?.split(' ')[0].toUpperCase() ?? 'JOGADOR'}</span>
           </h1>
         </div>
-        <div style={{ background: '#D9770610', border: '1px solid #D9770630', borderRadius: 10, padding: '8px 16px' }}>
-          <p style={{ margin: 0, fontSize: 9, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.12em' }}>{t('dashboard.tournamentLabel')}</p>
-          <p style={{ margin: 0, fontSize: 12, fontWeight: 800, color: '#D97706', letterSpacing: '0.06em' }}>{t('dashboard.tournamentName')}</p>
-        </div>
+        {!isMobile && (
+          <div style={{ background: '#D9770610', border: '1px solid #D9770630', borderRadius: 10, padding: '8px 16px', flexShrink: 0 }}>
+            <p style={{ margin: 0, fontSize: 9, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.12em' }}>{t('dashboard.tournamentLabel')}</p>
+            <p style={{ margin: 0, fontSize: 12, fontWeight: 800, color: '#D97706', letterSpacing: '0.06em' }}>{t('dashboard.tournamentName')}</p>
+          </div>
+        )}
+        {isMobile && (
+          <div style={{ background: '#F9731612', border: '1px solid #F9731625', borderRadius: 8, padding: '6px 10px', flexShrink: 0 }}>
+            <p style={{ margin: 0, fontSize: 9, color: '#F97316', fontWeight: 800, letterSpacing: '0.06em' }}>⚽ Copa 2026</p>
+          </div>
+        )}
       </div>
 
       {/* ── 5 Stat pills ── */}
@@ -407,7 +414,7 @@ export function Dashboard({ poolId, onGoToJogos, onGoToPrecopa, onGoToGroups, on
         {/* Next Match Hero — green pitch card */}
         <div
           style={{
-            position: 'relative', overflow: 'hidden', padding: 28,
+            position: 'relative', overflow: 'hidden', padding: isMobile ? 16 : 28,
             background: 'linear-gradient(135deg, #1A4731 0%, #236038 50%, #1C5232 100%)',
             borderRadius: 16,
             boxShadow: '0 4px 24px rgba(26,71,49,0.25)',
@@ -418,7 +425,7 @@ export function Dashboard({ poolId, onGoToJogos, onGoToPrecopa, onGoToGroups, on
           <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, rgba(0,0,0,0.25) 0%, transparent 25%, transparent 75%, rgba(0,0,0,0.25) 100%)', pointerEvents: 'none' }} />
 
           <div style={{ position: 'relative', zIndex: 1 }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: isMobile ? 12 : 24 }}>
               <p style={{ margin: 0, fontSize: 10, fontWeight: 800, color: 'rgba(255,255,255,0.6)', textTransform: 'uppercase', letterSpacing: '0.14em' }}>{t('dashboard.nextMatch')}</p>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 {nextMatch && nextMatchCountdown && (
@@ -452,37 +459,40 @@ export function Dashboard({ poolId, onGoToJogos, onGoToPrecopa, onGoToGroups, on
           ) : nextMatch ? (
             <>
               {/* Teams */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 20, marginBottom: 24 }}>
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
-                  <div style={{ padding: 4, background: 'rgba(255,255,255,0.12)', borderRadius: 8, backdropFilter: 'blur(4px)' }}>
-                    <FlagImg isoCode={nextMatch.homeTeam.isoCode} name={nextMatch.homeTeam.name} size={48} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 8 : 20, marginBottom: isMobile ? 12 : 24 }}>
+                {/* Home */}
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: isMobile ? 6 : 10 }}>
+                  <div style={{ padding: isMobile ? 3 : 4, background: 'rgba(255,255,255,0.12)', borderRadius: 8 }}>
+                    <FlagImg isoCode={nextMatch.homeTeam.isoCode} name={nextMatch.homeTeam.name} size={isMobile ? 36 : 48} />
                   </div>
-                  <p style={{ margin: 0, fontSize: 26, fontWeight: 900, color: '#FFFFFF', letterSpacing: '0.04em', textShadow: '0 2px 8px rgba(0,0,0,0.3)' }}>
+                  <p style={{ margin: 0, fontSize: isMobile ? 22 : 26, fontWeight: 900, color: '#FFFFFF', letterSpacing: '0.04em', textShadow: '0 2px 8px rgba(0,0,0,0.3)' }}>
                     {nextMatch.homeTeam.code || nextMatch.homeTeam.name.slice(0, 3).toUpperCase()}
                   </p>
-                  <p style={{ margin: 0, fontSize: 11, color: 'rgba(255,255,255,0.7)', textAlign: 'center', lineHeight: 1.3 }}>{nextMatch.homeTeam.name}</p>
+                  {!isMobile && <p style={{ margin: 0, fontSize: 11, color: 'rgba(255,255,255,0.7)', textAlign: 'center', lineHeight: 1.3 }}>{nextMatch.homeTeam.name}</p>}
                 </div>
 
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, flexShrink: 0 }}>
-                  <div style={{ background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 14, padding: '12px 20px', backdropFilter: 'blur(4px)' }}>
-                    <span style={{ fontSize: 20, fontWeight: 900, color: 'rgba(255,255,255,0.7)', letterSpacing: '0.15em' }}>VS</span>
+                {/* Center */}
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: isMobile ? 6 : 10, flexShrink: 0 }}>
+                  <div style={{ background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: isMobile ? 10 : 14, padding: isMobile ? '8px 14px' : '12px 20px' }}>
+                    <span style={{ fontSize: isMobile ? 16 : 20, fontWeight: 900, color: 'rgba(255,255,255,0.7)', letterSpacing: '0.15em' }}>VS</span>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                    <Clock size={11} color="rgba(255,255,255,0.6)" />
-                    <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)', whiteSpace: 'nowrap' }}>
-                      {formatBrazilDate(nextMatch.kickoffAt)} · {formatBrazilTime(nextMatch.kickoffAt)} (BRT)
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <Clock size={9} color="rgba(255,255,255,0.6)" />
+                    <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.7)', whiteSpace: 'nowrap' }}>
+                      {formatBrazilDate(nextMatch.kickoffAt)} · {formatBrazilTime(nextMatch.kickoffAt)}
                     </span>
                   </div>
                 </div>
 
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
-                  <div style={{ padding: 4, background: 'rgba(255,255,255,0.12)', borderRadius: 8, backdropFilter: 'blur(4px)' }}>
-                    <FlagImg isoCode={nextMatch.awayTeam.isoCode} name={nextMatch.awayTeam.name} size={48} />
+                {/* Away */}
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: isMobile ? 6 : 10 }}>
+                  <div style={{ padding: isMobile ? 3 : 4, background: 'rgba(255,255,255,0.12)', borderRadius: 8 }}>
+                    <FlagImg isoCode={nextMatch.awayTeam.isoCode} name={nextMatch.awayTeam.name} size={isMobile ? 36 : 48} />
                   </div>
-                  <p style={{ margin: 0, fontSize: 26, fontWeight: 900, color: '#FFFFFF', letterSpacing: '0.04em', textShadow: '0 2px 8px rgba(0,0,0,0.3)' }}>
+                  <p style={{ margin: 0, fontSize: isMobile ? 22 : 26, fontWeight: 900, color: '#FFFFFF', letterSpacing: '0.04em', textShadow: '0 2px 8px rgba(0,0,0,0.3)' }}>
                     {nextMatch.awayTeam.code || nextMatch.awayTeam.name.slice(0, 3).toUpperCase()}
                   </p>
-                  <p style={{ margin: 0, fontSize: 11, color: 'rgba(255,255,255,0.7)', textAlign: 'center', lineHeight: 1.3 }}>{nextMatch.awayTeam.name}</p>
+                  {!isMobile && <p style={{ margin: 0, fontSize: 11, color: 'rgba(255,255,255,0.7)', textAlign: 'center', lineHeight: 1.3 }}>{nextMatch.awayTeam.name}</p>}
                 </div>
               </div>
 
