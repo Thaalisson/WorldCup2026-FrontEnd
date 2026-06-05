@@ -292,6 +292,37 @@
   main { padding-bottom: 80px !important; }
 }
 
+/* ── Dashboard stat cards — mobile horizontal strip ────────── */
+@media (max-width: 768px) {
+  .stat-cards-grid {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    gap: 8px !important;
+    padding-bottom: 6px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .stat-cards-grid::-webkit-scrollbar { display: none; }
+  .stat-card {
+    flex: 0 0 auto !important;
+    width: 112px !important;
+    padding: 12px 10px !important;
+    gap: 8px !important;
+    border-radius: 14px !important;
+  }
+  .stat-icon { width: 26px !important; height: 26px !important; border-radius: 7px !important; }
+  .stat-value { font-size: 22px !important; }
+  .stat-label { font-size: 9px !important; }
+  .stat-sub { font-size: 10px !important; white-space: normal !important; line-height: 1.3; }
+  /* Hide chart card on mobile — needs horizontal space */
+  .dashboard-chart-card { display: none !important; }
+  /* Bot grid: 2-col on mobile (progress + ranking) */
+  .dashboard-bot-grid { grid-template-columns: 1fr !important; }
+}
+
 /* ── Horizontal chip scroll (no scrollbar visible) ─────────── */
 .chips-scroll {
   display: flex;

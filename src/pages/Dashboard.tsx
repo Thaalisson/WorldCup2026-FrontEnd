@@ -39,6 +39,16 @@ function FlagImg({ isoCode, name, size = 40 }: { isoCode?: string; name: string;
   );
 }
 
+function useMobile() {
+  const [m, setM] = useState(() => typeof window !== 'undefined' && window.innerWidth < 768);
+  useEffect(() => {
+    const h = () => setM(window.innerWidth < 768);
+    window.addEventListener('resize', h, { passive: true });
+    return () => window.removeEventListener('resize', h);
+  }, []);
+  return m;
+}
+
 function StatPill({
   icon, label, value, sub, color, bg, onClick,
 }: {
@@ -54,14 +64,14 @@ function StatPill({
       onMouseLeave={e => { if (onClick) (e.currentTarget as HTMLDivElement).style.borderColor = '#E5E7EB'; }}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <div style={{ width: 32, height: 32, background: bg, borderRadius: 9, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color }}>
+        <div className="stat-icon" style={{ width: 32, height: 32, background: bg, borderRadius: 9, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color }}>
           {icon}
         </div>
-        <p style={{ margin: 0, fontSize: 10, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.12em', fontWeight: 700 }}>{label}</p>
+        <p className="stat-label" style={{ margin: 0, fontSize: 10, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.12em', fontWeight: 700 }}>{label}</p>
       </div>
       <div>
-        <p style={{ margin: 0, fontSize: 28, fontWeight: 900, color, lineHeight: 1 }}>{value}</p>
-        {sub && <p style={{ margin: '3px 0 0', fontSize: 11, color: '#9CA3AF', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{sub}</p>}
+        <p className="stat-value" style={{ margin: 0, fontSize: 28, fontWeight: 900, color, lineHeight: 1 }}>{value}</p>
+        {sub && <p className="stat-sub" style={{ margin: '3px 0 0', fontSize: 11, color: '#9CA3AF', overflow: 'hidden', textOverflow: 'ellipsis' }}>{sub}</p>}
       </div>
     </div>
   );
@@ -174,6 +184,7 @@ function FootballPitch() {
 export function Dashboard({ poolId, onGoToJogos, onGoToPrecopa, onGoToGroups, onGoToBoloes }: Props) {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const isMobile = useMobile();
   const [ranking, setRanking] = useState<RankingItem[]>([]);
   const [matches, setMatches] = useState<Match[]>([]);
   const [feedEvents, setFeedEvents] = useState<FeedEvent[]>([]);
@@ -301,60 +312,62 @@ export function Dashboard({ poolId, onGoToJogos, onGoToPrecopa, onGoToGroups, on
           Array.from({ length: 5 }).map((_, i) => <SkeletonStatPill key={i} />)
         ) : (
           <>
-            <StatPill
-              icon={<Star size={17} />}
-              label={t('dashboard.statScore')}
+            <StatPill icon={<Star size={17} />} label={t('dashboard.statScore')}
               value={hasPool ? (myStats?.totalPoints ?? 0) : '—'}
               sub={myStats ? t('dashboard.exactScores', { count: myStats?.exactScores ?? 0 }) : (hasPool ? t('dashboard.noPoints') : t('common.selectPool'))}
-              color="#D97706" bg="#D9770610"
-            />
-            <StatPill
-              icon={<Trophy size={17} />}
-              label={t('dashboard.statPosition')}
+              color="#D97706" bg="#D9770610" />
+            <StatPill icon={<Trophy size={17} />} label={t('dashboard.statPosition')}
               value={myStats ? `${myStats.position}º` : '—'}
               sub={myStats && ranking.length > 0 ? t('dashboard.rankingOf', { count: ranking.length }) : t('dashboard.noRanking')}
-              color="#F97316" bg="#F9731610"
-            />
-            <StatPill
-              icon={<Target size={17} />}
-              label={t('dashboard.statBets')}
+              color="#F97316" bg="#F9731610" />
+            <StatPill icon={<Target size={17} />} label={t('dashboard.statBets')}
               value={hasPool ? `${doneCount}` : '—'}
               sub={hasPool && totalMatches > 0 ? t('dashboard.betsOf', { total: totalMatches || '?', pct: donePct }) : t('common.selectPool')}
-              color="#22C55E" bg="#22C55E10"
-              onClick={onGoToJogos}
-            />
-            <StatPill
-              icon={<AlertCircle size={17} />}
-              label={t('dashboard.statPending')}
+              color="#22C55E" bg="#22C55E10" onClick={onGoToJogos} />
+            <StatPill icon={<AlertCircle size={17} />} label={t('dashboard.statPending')}
               value={hasPool ? pendingCount : '—'}
               sub={hasPool ? (pendingCount > 0 ? t('dashboard.pendingOpen') : t('dashboard.allDone')) : t('common.selectPool')}
               color={pendingCount > 0 ? '#F97316' : '#22C55E'} bg={pendingCount > 0 ? '#F9731610' : '#22C55E10'}
-              onClick={onGoToJogos}
-            />
-            <StatPill
-              icon={<Award size={17} />}
-              label={t('dashboard.statChampion')}
+              onClick={onGoToJogos} />
+            <StatPill icon={<Award size={17} />} label={t('dashboard.statChampion')}
               value={hasPool ? championCode : '—'}
               sub={hasPool ? (hasChampion ? championName! : t('dashboard.noChampion')) : t('common.selectPool')}
               color={hasChampion ? '#A855F7' : '#F97316'} bg={hasChampion ? '#A855F710' : '#F9731610'}
-              onClick={onGoToPrecopa}
-            />
+              onClick={onGoToPrecopa} />
           </>
         )}
       </div>
 
       {/* ── Pre-Copa Countdown ── */}
-      {copaCountdown && (
+      {copaCountdown && (isMobile ? (
+        /* Mobile: compact single-row countdown */
         <div style={{
           background: 'linear-gradient(135deg, #1A3A5C 0%, #1E4D7B 100%)',
-          borderRadius: 16,
-          padding: '20px 28px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          boxShadow: '0 4px 24px rgba(26,58,92,0.25)',
-          flexWrap: 'wrap',
-          gap: 16,
+          borderRadius: 14, padding: '14px 16px',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+          boxShadow: '0 4px 20px rgba(26,58,92,0.3)',
+        }}>
+          <div style={{ minWidth: 0 }}>
+            <p style={{ margin: 0, fontSize: 9, fontWeight: 800, color: 'rgba(255,255,255,0.55)', letterSpacing: '0.14em', textTransform: 'uppercase' }}>🏆 {t('dashboard.copaTitle')}</p>
+            <p style={{ margin: '2px 0 0', fontSize: 20, fontWeight: 900, color: '#fff', fontVariantNumeric: 'tabular-nums', lineHeight: 1 }}>
+              {String(copaCountdown.d).padStart(2,'0')}d {String(copaCountdown.h).padStart(2,'0')}h {String(copaCountdown.m).padStart(2,'0')}m
+            </p>
+          </div>
+          <button onClick={hasPool ? onGoToJogos : onGoToBoloes} style={{
+            flexShrink: 0, padding: '9px 14px', borderRadius: 9,
+            background: '#F97316', border: 'none', color: '#fff',
+            fontWeight: 800, fontSize: 11, letterSpacing: '0.08em', cursor: 'pointer',
+          }}>
+            {hasPool ? t('dashboard.makeBets') : t('dashboard.createPoolFirst')}
+          </button>
+        </div>
+      ) : (
+        /* Desktop: full countdown banner */
+        <div style={{
+          background: 'linear-gradient(135deg, #1A3A5C 0%, #1E4D7B 100%)',
+          borderRadius: 16, padding: '20px 28px',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          boxShadow: '0 4px 24px rgba(26,58,92,0.25)', flexWrap: 'wrap', gap: 16,
         }}>
           <div>
             <p style={{ margin: 0, fontSize: 10, fontWeight: 800, color: 'rgba(255,255,255,0.65)', letterSpacing: '0.14em', textTransform: 'uppercase' }}>{t('dashboard.copaTitle')}</p>
@@ -369,29 +382,22 @@ export function Dashboard({ poolId, onGoToJogos, onGoToPrecopa, onGoToGroups, on
               { val: copaCountdown.s, label: t('common.sec') },
             ].map(({ val, label }) => (
               <div key={label} style={{ textAlign: 'center', background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 10, padding: '10px 14px', minWidth: 52 }}>
-                <p style={{ margin: 0, fontSize: 26, fontWeight: 900, color: '#fff', lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
-                  {String(val).padStart(2, '0')}
-                </p>
+                <p style={{ margin: 0, fontSize: 26, fontWeight: 900, color: '#fff', lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>{String(val).padStart(2,'0')}</p>
                 <p style={{ margin: '4px 0 0', fontSize: 9, fontWeight: 700, color: 'rgba(255,255,255,0.6)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>{label}</p>
               </div>
             ))}
           </div>
-          <button
-            onClick={hasPool ? onGoToJogos : onGoToBoloes}
-            style={{
-              padding: '10px 22px', borderRadius: 10,
-              background: '#F97316', border: 'none',
-              color: '#fff', fontWeight: 800, fontSize: 12, letterSpacing: '0.1em',
-              cursor: 'pointer', whiteSpace: 'nowrap',
-              transition: 'background 0.2s',
-            }}
+          <button onClick={hasPool ? onGoToJogos : onGoToBoloes} style={{
+            padding: '10px 22px', borderRadius: 10, background: '#F97316', border: 'none',
+            color: '#fff', fontWeight: 800, fontSize: 12, letterSpacing: '0.1em',
+            cursor: 'pointer', whiteSpace: 'nowrap', transition: 'background 0.2s',
+          }}
             onMouseEnter={e => (e.currentTarget.style.background = '#EA580C')}
-            onMouseLeave={e => (e.currentTarget.style.background = '#F97316')}
-          >
+            onMouseLeave={e => (e.currentTarget.style.background = '#F97316')}>
             {hasPool ? t('dashboard.makeBets') : t('dashboard.createPoolFirst')}
           </button>
         </div>
-      )}
+      ))}
 
       {/* ── Hero match + Checklist ── */}
       <div
@@ -631,8 +637,8 @@ export function Dashboard({ poolId, onGoToJogos, onGoToPrecopa, onGoToGroups, on
           )}
         </div>
 
-        {/* Evolution Chart */}
-        <div className="card" style={{ padding: 20 }}>
+        {/* Evolution Chart — hidden on mobile (needs width) */}
+        <div className="card dashboard-chart-card" style={{ padding: 20 }}>
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16 }}>
             <div>
               <p className="section-label" style={{ margin: 0 }}>{t('dashboard.evolutionTitle')}</p>
