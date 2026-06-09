@@ -66,7 +66,7 @@ function MainApp() {
   const [inviteCode, setInviteCode] = useState('');
   const [poolMsg, setPoolMsg] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
-  const [confirmLeave, setConfirmLeave] = useState(false);
+  const [confirmLeaveId, setConfirmLeaveId] = useState<string | null>(null);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [createdPool, setCreatedPool] = useState<Pool | null>(null);
   const [copied, setCopied] = useState(false);
@@ -164,19 +164,18 @@ function MainApp() {
     }
   }
 
-  async function leavePool() {
-    if (!activePoolId) return;
+  async function leavePool(poolId: string) {
     try {
-      await apiDelete(`/pools/${activePoolId}/leave`);
-      const updated = pools.filter(p => p.id !== activePoolId);
+      await apiDelete(`/pools/${poolId}/leave`);
+      const updated = pools.filter(p => p.id !== poolId);
       setPools(updated);
-      setActivePoolId(updated[0]?.id ?? '');
-      setConfirmLeave(false);
+      if (activePoolId === poolId) setActivePoolId(updated[0]?.id ?? '');
+      setConfirmLeaveId(null);
       setMenuOpen(false);
     } catch (err) {
       const msg = err instanceof Error ? err.message : '';
-      setPoolMsg(msg.includes('400') ? 'Donos não podem sair do próprio bolão.' : 'Erro ao sair do bolão.');
-      setConfirmLeave(false);
+      setPoolMsg(msg.includes('400') ? 'O dono não pode sair do próprio bolão.' : 'Erro ao sair do bolão.');
+      setConfirmLeaveId(null);
     }
   }
 
@@ -329,22 +328,22 @@ function MainApp() {
                   </button>
                 )}
                 {activePoolId && activePool && activePool.ownerUserId !== user?.id && (
-                  confirmLeave ? (
+                  confirmLeaveId === activePoolId ? (
                     <div style={{ padding: '8px 12px', borderTop: '1px solid #FEE2E2', background: '#FFF5F5' }}>
                       <p style={{ margin: '0 0 8px', fontSize: 12, color: '#DC2626', fontWeight: 600 }}>
                         Sair de <strong>{activePool.name}</strong>?
                       </p>
                       <div style={{ display: 'flex', gap: 6 }}>
-                        <button onClick={() => setConfirmLeave(false)} style={{ flex: 1, padding: '6px 0', background: '#F3F4F6', border: 'none', borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: 'pointer', color: '#6B7280' }}>
+                        <button onClick={() => setConfirmLeaveId(null)} style={{ flex: 1, padding: '6px 0', background: '#F3F4F6', border: 'none', borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: 'pointer', color: '#6B7280' }}>
                           Cancelar
                         </button>
-                        <button onClick={leavePool} style={{ flex: 1, padding: '6px 0', background: '#EF4444', border: 'none', borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: 'pointer', color: '#fff' }}>
+                        <button onClick={() => leavePool(activePoolId)} style={{ flex: 1, padding: '6px 0', background: '#EF4444', border: 'none', borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: 'pointer', color: '#fff' }}>
                           Confirmar
                         </button>
                       </div>
                     </div>
                   ) : (
-                    <button onClick={() => setConfirmLeave(true)} style={{ width: '100%', padding: '8px 12px', background: 'none', border: 'none', color: '#EF4444', fontSize: 13, cursor: 'pointer', textAlign: 'left', borderRadius: 6, opacity: 0.8 }}>
+                    <button onClick={() => setConfirmLeaveId(activePoolId)} style={{ width: '100%', padding: '8px 12px', background: 'none', border: 'none', color: '#EF4444', fontSize: 13, cursor: 'pointer', textAlign: 'left', borderRadius: 6, opacity: 0.8 }}>
                       Sair do bolão
                     </button>
                   )
@@ -691,6 +690,38 @@ function MainApp() {
                         {copied ? <Check size={13} color="#22C55E" /> : <Copy size={13} />}
                       </button>
                     </div>
+
+                    {/* Leave / owner badge */}
+                    {p.ownerUserId === user?.id ? (
+                      <div style={{ marginTop: 10, display: 'flex', justifyContent: 'flex-end' }}>
+                        <span style={{ fontSize: 10, fontWeight: 700, color: '#F97316', background: '#FFF7ED', border: '1px solid #FED7AA', borderRadius: 6, padding: '2px 8px', letterSpacing: '0.06em' }}>
+                          CRIADOR
+                        </span>
+                      </div>
+                    ) : confirmLeaveId === p.id ? (
+                      <div style={{ marginTop: 10, padding: '10px 12px', background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 8 }}>
+                        <p style={{ margin: '0 0 8px', fontSize: 12, color: '#DC2626', fontWeight: 600 }}>
+                          Tem certeza que quer sair de <strong>{p.name}</strong>?
+                        </p>
+                        <div style={{ display: 'flex', gap: 8 }}>
+                          <button onClick={() => setConfirmLeaveId(null)}
+                            style={{ flex: 1, padding: '7px 0', background: '#F3F4F6', border: 'none', borderRadius: 7, fontSize: 12, fontWeight: 700, cursor: 'pointer', color: '#6B7280' }}>
+                            Cancelar
+                          </button>
+                          <button onClick={() => leavePool(p.id)}
+                            style={{ flex: 1, padding: '7px 0', background: '#EF4444', border: 'none', borderRadius: 7, fontSize: 12, fontWeight: 700, cursor: 'pointer', color: '#fff' }}>
+                            Sair do bolão
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div style={{ marginTop: 10, display: 'flex', justifyContent: 'flex-end' }}>
+                        <button onClick={() => setConfirmLeaveId(p.id)}
+                          style={{ background: 'none', border: '1px solid #FECACA', borderRadius: 7, padding: '5px 12px', fontSize: 11, fontWeight: 700, cursor: 'pointer', color: '#EF4444' }}>
+                          Sair do bolão
+                        </button>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
