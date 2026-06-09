@@ -53,6 +53,8 @@ export function MatchCard({ match, home, away, isSaved, isDirty, onChange, onBlu
   const timeStr = formatBrazilTime(match.kickoffAt);
   const countdown = useCountdown(match.kickoffAt);
 
+  const clamp = (raw: string) => Math.min(20, Math.max(0, parseInt(raw, 10) || 0));
+
   // Cor cinza para "0 não preenchido", escuro para valor real
   const untouched = !isDirty && !isSaved;
   const inputStyle = (val: number): React.CSSProperties => ({
@@ -134,37 +136,21 @@ export function MatchCard({ match, home, away, isSaved, isDirty, onChange, onBlu
           ) : (
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <input
-                type="number" min={0}
+                type="number" min={0} max={20}
                 value={home}
-                onChange={e => onChange(Math.max(0, parseInt(e.target.value) || 0), away)}
+                onChange={e => onChange(clamp(e.target.value), away)}
                 style={inputStyle(home)}
-                onFocus={e => {
-                  e.target.select();
-                  e.target.style.borderColor = '#F97316';
-                  e.target.style.color = '#111827';
-                  e.target.style.fontWeight = '800';
-                }}
-                onBlur={e => {
-                  e.target.style.borderColor = isDirty ? '#F9731660' : '#E5E7EB';
-                  onBlur?.();
-                }}
+                onFocus={e => { e.target.select(); e.target.style.borderColor = '#F97316'; e.target.style.color = '#111827'; e.target.style.fontWeight = '800'; }}
+                onBlur={e => { e.target.style.borderColor = isDirty ? '#F9731660' : '#E5E7EB'; onBlur?.(); }}
               />
               <span style={{ color: '#D1D5DB', fontWeight: 700, fontSize: 12 }}>×</span>
               <input
-                type="number" min={0}
+                type="number" min={0} max={20}
                 value={away}
-                onChange={e => onChange(home, Math.max(0, parseInt(e.target.value) || 0))}
+                onChange={e => onChange(home, clamp(e.target.value))}
                 style={inputStyle(away)}
-                onFocus={e => {
-                  e.target.select();
-                  e.target.style.borderColor = '#F97316';
-                  e.target.style.color = '#111827';
-                  e.target.style.fontWeight = '800';
-                }}
-                onBlur={e => {
-                  e.target.style.borderColor = isDirty ? '#F9731660' : '#E5E7EB';
-                  onBlur?.();
-                }}
+                onFocus={e => { e.target.select(); e.target.style.borderColor = '#F97316'; e.target.style.color = '#111827'; e.target.style.fontWeight = '800'; }}
+                onBlur={e => { e.target.style.borderColor = isDirty ? '#F9731660' : '#E5E7EB'; onBlur?.(); }}
               />
             </div>
           )}

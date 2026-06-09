@@ -82,7 +82,7 @@ export function Stats({ poolId }: Props) {
                   contentStyle={{ background: '#FFFFFF', border: '1px solid #E5E7EB', borderRadius: 8, fontSize: 12 }}
                   labelStyle={{ color: '#6B7280' }}
                   itemStyle={{ color: '#F97316' }}
-                  formatter={(value: number) => [`${value} palpite${value !== 1 ? 's' : ''}`, t('stats.votesLabel')]}
+                  formatter={(value) => [`${value} palpite${value !== 1 ? 's' : ''}`, t('stats.votesLabel')]}
                 />
                 <Bar dataKey="votos" radius={[4, 4, 0, 0]}>
                   {chartData.map((_, i) => <Cell key={i} fill={BAR_COLORS[i % BAR_COLORS.length]} />)}
