@@ -287,7 +287,10 @@
     "chooseTeam": "Escolher time...",
     "saved": "SALVO!",
     "saving": "SALVANDO...",
-    "saveBet": "SALVAR PALPITE"
+    "saveBet": "SALVAR PALPITE",
+    "saveAll": "SALVAR {{count}} GRUPO(S)",
+    "groupsSaved": "grupos salvos",
+    "pendingChanges": "com alterações"
   },
   "knockout": {
     "title": "FASE ",

@@ -287,7 +287,10 @@
     "chooseTeam": "Choose a team...",
     "saved": "SAVED!",
     "saving": "SAVING...",
-    "saveBet": "SAVE PREDICTION"
+    "saveBet": "SAVE PREDICTION",
+    "saveAll": "SAVE {{count}} GROUP(S)",
+    "groupsSaved": "groups saved",
+    "pendingChanges": "with changes"
   },
   "knockout": {
     "title": "KNOCKOUT ",
