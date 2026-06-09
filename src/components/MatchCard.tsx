@@ -53,18 +53,20 @@ export function MatchCard({ match, home, away, isSaved, isDirty, onChange, onBlu
   const timeStr = formatBrazilTime(match.kickoffAt);
   const countdown = useCountdown(match.kickoffAt);
 
-  const inputStyle: React.CSSProperties = {
+  // Cor cinza para "0 não preenchido", escuro para valor real
+  const untouched = !isDirty && !isSaved;
+  const inputStyle = (val: number): React.CSSProperties => ({
     width: 38, height: 38,
     background: '#FFFFFF',
     border: `1px solid ${isDirty ? '#F9731660' : '#E5E7EB'}`,
     borderRadius: 8,
-    color: '#111827',
-    fontWeight: 800,
+    color: val === 0 && untouched ? '#D1D5DB' : '#111827',
+    fontWeight: val === 0 && untouched ? 400 : 800,
     fontSize: 16,
     textAlign: 'center',
     outline: 'none',
-    transition: 'border-color 0.15s',
-  };
+    transition: 'border-color 0.15s, color 0.1s',
+  });
 
   const savedIndicator = isSaved && !isDirty;
 
@@ -133,26 +135,34 @@ export function MatchCard({ match, home, away, isSaved, isDirty, onChange, onBlu
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <input
                 type="number" min={0}
-                value={home === 0 && !isDirty && !isSaved ? '' : home}
-                placeholder="0"
+                value={home}
                 onChange={e => onChange(Math.max(0, parseInt(e.target.value) || 0), away)}
-                style={inputStyle}
-                onFocus={e => (e.target as HTMLInputElement).style.borderColor = '#F97316'}
+                style={inputStyle(home)}
+                onFocus={e => {
+                  e.target.select();
+                  e.target.style.borderColor = '#F97316';
+                  e.target.style.color = '#111827';
+                  e.target.style.fontWeight = '800';
+                }}
                 onBlur={e => {
-                  (e.target as HTMLInputElement).style.borderColor = isDirty ? '#F9731660' : '#E5E7EB';
+                  e.target.style.borderColor = isDirty ? '#F9731660' : '#E5E7EB';
                   onBlur?.();
                 }}
               />
               <span style={{ color: '#D1D5DB', fontWeight: 700, fontSize: 12 }}>×</span>
               <input
                 type="number" min={0}
-                value={away === 0 && !isDirty && !isSaved ? '' : away}
-                placeholder="0"
+                value={away}
                 onChange={e => onChange(home, Math.max(0, parseInt(e.target.value) || 0))}
-                style={inputStyle}
-                onFocus={e => (e.target as HTMLInputElement).style.borderColor = '#F97316'}
+                style={inputStyle(away)}
+                onFocus={e => {
+                  e.target.select();
+                  e.target.style.borderColor = '#F97316';
+                  e.target.style.color = '#111827';
+                  e.target.style.fontWeight = '800';
+                }}
                 onBlur={e => {
-                  (e.target as HTMLInputElement).style.borderColor = isDirty ? '#F9731660' : '#E5E7EB';
+                  e.target.style.borderColor = isDirty ? '#F9731660' : '#E5E7EB';
                   onBlur?.();
                 }}
               />
