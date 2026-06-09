@@ -45,6 +45,7 @@ export type Pool = {
   isPrivate: boolean;
   inviteCode: string;
   participantCount: number;
+  ownerUserId: string;
 };
 
 export type Prediction = {

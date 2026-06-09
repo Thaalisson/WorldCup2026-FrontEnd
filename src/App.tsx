@@ -17,7 +17,7 @@ import { Knockout } from './pages/Knockout';
 import { AdminPanel } from './pages/AdminPanel';
 import { PoolSettings } from './pages/PoolSettings';
 import { Performance } from './pages/Performance';
-import { apiGet, apiPost } from './services/api';
+import { apiGet, apiPost, apiDelete } from './services/api';
 import type { Pool, Match } from './types';
 import { useToast } from './context/ToastContext';
 import { Plus, Hash, X, ChevronDown, Shield, Copy, Check, Share2, Users, Home, Zap, Star, BarChart2, Trophy, Flag, Target, MoreHorizontal, GitMerge, TrendingUp } from 'lucide-react';
@@ -66,6 +66,7 @@ function MainApp() {
   const [inviteCode, setInviteCode] = useState('');
   const [poolMsg, setPoolMsg] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
+  const [confirmLeave, setConfirmLeave] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [createdPool, setCreatedPool] = useState<Pool | null>(null);
   const [copied, setCopied] = useState(false);
@@ -160,6 +161,22 @@ function MainApp() {
       setPoolMsg('');
     } catch {
       setPoolMsg(t('app.joinPoolError'));
+    }
+  }
+
+  async function leavePool() {
+    if (!activePoolId) return;
+    try {
+      await apiDelete(`/pools/${activePoolId}/leave`);
+      const updated = pools.filter(p => p.id !== activePoolId);
+      setPools(updated);
+      setActivePoolId(updated[0]?.id ?? '');
+      setConfirmLeave(false);
+      setMenuOpen(false);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : '';
+      setPoolMsg(msg.includes('400') ? 'Donos não podem sair do próprio bolão.' : 'Erro ao sair do bolão.');
+      setConfirmLeave(false);
     }
   }
 
@@ -310,6 +327,27 @@ function MainApp() {
                   <button onClick={() => { setMenuOpen(false); setPage('settings'); }} style={{ width: '100%', padding: '8px 12px', background: 'none', border: 'none', color: '#6B7280', fontSize: 13, cursor: 'pointer', textAlign: 'left', borderRadius: 6 }}>
                     {t('nav.configureScoring')}
                   </button>
+                )}
+                {activePoolId && activePool && activePool.ownerUserId !== user?.id && (
+                  confirmLeave ? (
+                    <div style={{ padding: '8px 12px', borderTop: '1px solid #FEE2E2', background: '#FFF5F5' }}>
+                      <p style={{ margin: '0 0 8px', fontSize: 12, color: '#DC2626', fontWeight: 600 }}>
+                        Sair de <strong>{activePool.name}</strong>?
+                      </p>
+                      <div style={{ display: 'flex', gap: 6 }}>
+                        <button onClick={() => setConfirmLeave(false)} style={{ flex: 1, padding: '6px 0', background: '#F3F4F6', border: 'none', borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: 'pointer', color: '#6B7280' }}>
+                          Cancelar
+                        </button>
+                        <button onClick={leavePool} style={{ flex: 1, padding: '6px 0', background: '#EF4444', border: 'none', borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: 'pointer', color: '#fff' }}>
+                          Confirmar
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <button onClick={() => setConfirmLeave(true)} style={{ width: '100%', padding: '8px 12px', background: 'none', border: 'none', color: '#EF4444', fontSize: 13, cursor: 'pointer', textAlign: 'left', borderRadius: 6, opacity: 0.8 }}>
+                      Sair do bolão
+                    </button>
+                  )
                 )}
                 {user?.isAdmin && (
                   <button onClick={() => { setMenuOpen(false); setPage('admin'); }} style={{ width: '100%', padding: '8px 12px', background: 'none', border: 'none', color: '#EF4444', fontSize: 13, cursor: 'pointer', textAlign: 'left', borderRadius: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
