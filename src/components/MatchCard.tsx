@@ -133,7 +133,7 @@ export function MatchCard({ match, home, away, isSaved, isDirty, onChange, onBlu
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <input
                 type="number" min={0}
-                value={home === 0 ? '' : home}
+                value={home === 0 && !isDirty && !isSaved ? '' : home}
                 placeholder="0"
                 onChange={e => onChange(Math.max(0, parseInt(e.target.value) || 0), away)}
                 style={inputStyle}
@@ -146,7 +146,7 @@ export function MatchCard({ match, home, away, isSaved, isDirty, onChange, onBlu
               <span style={{ color: '#D1D5DB', fontWeight: 700, fontSize: 12 }}>×</span>
               <input
                 type="number" min={0}
-                value={away === 0 ? '' : away}
+                value={away === 0 && !isDirty && !isSaved ? '' : away}
                 placeholder="0"
                 onChange={e => onChange(home, Math.max(0, parseInt(e.target.value) || 0))}
                 style={inputStyle}
