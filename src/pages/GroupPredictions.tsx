@@ -24,7 +24,9 @@ export function GroupPredictions({ poolId }: Props) {
   const [picks, setPicks] = useState<Record<string, GroupPick>>({});
   const [saving, setSaving] = useState<Record<string, boolean>>({});
   const [savedOk, setSavedOk] = useState<Record<string, boolean>>({});
+  const [saveError, setSaveError] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
 
   const isLocked = new Date() >= LOCK_DATE;
 
@@ -42,7 +44,9 @@ export function GroupPredictions({ poolId }: Props) {
             const map: Record<string, SavedPick> = {};
             data.forEach(d => { map[d.groupName] = d; });
             setSaved(map);
-          }).catch(() => {})
+          }).catch(err => {
+            setLoadError(err instanceof Error ? err.message : 'Erro ao carregar palpites');
+          })
       : Promise.resolve();
 
     Promise.all([loadTeams, loadSaved])
@@ -64,6 +68,7 @@ export function GroupPredictions({ poolId }: Props) {
     if (pick.firstPlaceTeamId === pick.secondPlaceTeamId) return;
 
     setSaving(p => ({ ...p, [group]: true }));
+    setSaveError(p => ({ ...p, [group]: '' }));
     try {
       await apiPost('/group-predictions', {
         poolId,
@@ -73,8 +78,9 @@ export function GroupPredictions({ poolId }: Props) {
       });
       setSavedOk(p => ({ ...p, [group]: true }));
       setTimeout(() => setSavedOk(p => ({ ...p, [group]: false })), 2000);
-    } catch {
-      // silent
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Erro ao salvar';
+      setSaveError(p => ({ ...p, [group]: msg }));
     } finally {
       setSaving(p => ({ ...p, [group]: false }));
     }
@@ -98,6 +104,12 @@ export function GroupPredictions({ poolId }: Props) {
         </div>
       )}
 
+      {loadError && (
+        <div style={{ padding: '10px 14px', borderRadius: 8, background: '#FEF2F2', border: '1px solid #FECACA', color: '#DC2626', fontSize: 12, fontFamily: 'monospace' }}>
+          Erro ao carregar palpites salvos: {loadError}
+        </div>
+      )}
+
       {!poolId ? (
         <div style={{ textAlign: 'center', padding: '60px 0', color: '#6B7280' }}>
           <p style={{ fontSize: 14 }}>{t('groupPredictions.noPool')}</p>
@@ -113,6 +125,7 @@ export function GroupPredictions({ poolId }: Props) {
             const pick = getPick(group);
             const ok = savedOk[group];
             const busy = saving[group];
+            const err = saveError[group];
             const pts = saved[group]?.pointsEarned ?? 0;
 
             return (
@@ -165,22 +178,29 @@ export function GroupPredictions({ poolId }: Props) {
                   </div>
 
                   {!isLocked && (
-                    <button
-                      onClick={() => handleSave(group)}
-                      disabled={busy || !pick.firstPlaceTeamId || !pick.secondPlaceTeamId}
-                      style={{
-                        width: '100%', padding: '9px',
-                        background: ok ? '#22C55E' : '#F97316',
-                        border: 'none', borderRadius: 8,
-                        color: '#F9FAFB', fontSize: 11, fontWeight: 800,
-                        letterSpacing: '0.08em', cursor: 'pointer',
-                        opacity: busy || !pick.firstPlaceTeamId || !pick.secondPlaceTeamId ? 0.5 : 1,
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                        transition: 'background 0.2s',
-                      }}
-                    >
-                      {ok ? <><CheckCircle size={13} /> {t('groupPredictions.saved')}</> : busy ? t('groupPredictions.saving') : t('groupPredictions.saveBet')}
-                    </button>
+                    <>
+                      <button
+                        onClick={() => handleSave(group)}
+                        disabled={busy || !pick.firstPlaceTeamId || !pick.secondPlaceTeamId}
+                        style={{
+                          width: '100%', padding: '9px',
+                          background: ok ? '#22C55E' : '#F97316',
+                          border: 'none', borderRadius: 8,
+                          color: '#F9FAFB', fontSize: 11, fontWeight: 800,
+                          letterSpacing: '0.08em', cursor: 'pointer',
+                          opacity: busy || !pick.firstPlaceTeamId || !pick.secondPlaceTeamId ? 0.5 : 1,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                          transition: 'background 0.2s',
+                        }}
+                      >
+                        {ok ? <><CheckCircle size={13} /> {t('groupPredictions.saved')}</> : busy ? t('groupPredictions.saving') : t('groupPredictions.saveBet')}
+                      </button>
+                      {err && (
+                        <p style={{ margin: '4px 0 0', fontSize: 10, color: '#EF4444', textAlign: 'center' }}>
+                          {err}
+                        </p>
+                      )}
+                    </>
                   )}
                 </div>
               </div>
