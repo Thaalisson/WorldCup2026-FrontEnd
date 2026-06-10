@@ -216,7 +216,12 @@
     "savedPartial": "{{saved}} salvos, {{skipped}} bloqueados.",
     "saveError": "Erro ao salvar. Tente novamente.",
     "noMatchesForGroup": "Nenhum jogo disponível para o Grupo {{group}}.",
-    "awaitingResult": "Aguardando Resultado"
+    "awaitingResult": "Aguardando Resultado",
+    "replicateAll": "REPLICAR PARA TODOS",
+    "replicating": "REPLICANDO...",
+    "replicateSuccess": "{{replicated}} palpites copiados para {{pools}} bolão(ões)!",
+    "replicateNone": "Nenhum palpite desbloqueado para replicar.",
+    "replicateNoOtherPools": "Você só tem 1 bolão."
   },
   "matchCard": {
     "locked": "BLOQ.",

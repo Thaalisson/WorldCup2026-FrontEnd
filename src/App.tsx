@@ -637,7 +637,7 @@ function MainApp() {
           onGoToGroups={() => setPage('grouppreds')}
           onGoToBoloes={() => setPage('boloes')}
         />}
-        {page === 'jogos' && activePoolId && <Predictions poolId={activePoolId} />}
+        {page === 'jogos' && activePoolId && <Predictions poolId={activePoolId} totalPools={pools.length} />}
         {page === 'jogos' && !activePoolId && <EmptyState icon="⚽" text={t('app.noPoolForBets')} />}
         {page === 'precopa' && activePoolId && <ChampionPick poolId={activePoolId} />}
         {page === 'precopa' && !activePoolId && <EmptyState icon="🏆" text={t('app.noPoolForChampion')} />}

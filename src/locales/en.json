@@ -216,7 +216,12 @@
     "savedPartial": "{{saved}} saved, {{skipped}} blocked.",
     "saveError": "Error saving. Please try again.",
     "noMatchesForGroup": "No matches available for Group {{group}}.",
-    "awaitingResult": "Awaiting Result"
+    "awaitingResult": "Awaiting Result",
+    "replicateAll": "COPY TO ALL POOLS",
+    "replicating": "COPYING...",
+    "replicateSuccess": "{{replicated}} picks copied to {{pools}} pool(s)!",
+    "replicateNone": "No unlocked predictions to copy.",
+    "replicateNoOtherPools": "You only have 1 pool."
   },
   "matchCard": {
     "locked": "LOCK.",

@@ -4,9 +4,9 @@ import { MatchCard } from '../components/MatchCard';
 import { apiGet, apiPost } from '../services/api';
 import type { Match, Prediction } from '../types';
 import { formatBrazilDate, isMatchLocked } from '../utils/timezone';
-import { Save, CheckCircle, AlertCircle, Calendar, Zap } from 'lucide-react';
+import { Save, CheckCircle, AlertCircle, Calendar, Zap, Copy } from 'lucide-react';
 
-type Props = { poolId: string };
+type Props = { poolId: string; totalPools?: number };
 type ScoreEntry = { home: number; away: number };
 type DateFilter = 'all' | 'today' | 'week';
 
@@ -24,7 +24,7 @@ function isBrazilThisWeek(isoString: string): boolean {
   return matchDate >= now && matchDate <= in7;
 }
 
-export function Predictions({ poolId }: Props) {
+export function Predictions({ poolId, totalPools = 1 }: Props) {
   const { t } = useTranslation();
   const [matches, setMatches] = useState<Match[]>([]);
   const [scores, setScores] = useState<Record<string, ScoreEntry>>({});
@@ -33,6 +33,7 @@ export function Predictions({ poolId }: Props) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [replicating, setReplicating] = useState(false);
   const [error, setError] = useState('');
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
   const [dateFilter, setDateFilter] = useState<DateFilter>('all');
@@ -112,6 +113,24 @@ export function Predictions({ poolId }: Props) {
     } finally {
       setSaving(false);
       saveMsgTimer.current = setTimeout(() => setSaveMsg(null), 4000);
+    }
+  }
+
+  async function handleReplicate() {
+    setReplicating(true);
+    if (saveMsgTimer.current) clearTimeout(saveMsgTimer.current);
+    try {
+      const result = await apiPost<{ replicated: number; pools: number }>('/predictions/replicate', { sourcePoolId: poolId });
+      if (result.replicated === 0) {
+        setSaveMsg({ type: 'error', text: t('predictions.replicateNone') });
+      } else {
+        setSaveMsg({ type: 'success', text: t('predictions.replicateSuccess', { replicated: result.replicated, pools: result.pools }) });
+      }
+    } catch {
+      setSaveMsg({ type: 'error', text: t('predictions.saveError') });
+    } finally {
+      setReplicating(false);
+      saveMsgTimer.current = setTimeout(() => setSaveMsg(null), 5000);
     }
   }
 
@@ -196,12 +215,36 @@ export function Predictions({ poolId }: Props) {
           )}
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
           {saveMsg && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 600, color: saveMsg.type === 'success' ? '#22C55E' : '#EF4444' }}>
               {saveMsg.type === 'success' ? <CheckCircle size={14} /> : <AlertCircle size={14} />}
               {saveMsg.text}
             </div>
+          )}
+          {totalPools > 1 && (
+            <button
+              onClick={handleReplicate}
+              disabled={replicating}
+              title={t('predictions.replicateAll')}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 7,
+                padding: '11px 18px',
+                background: replicating ? '#E5E7EB' : '#F3F4F6',
+                border: '1.5px solid #E5E7EB', borderRadius: 9,
+                color: replicating ? '#9CA3AF' : '#374151',
+                fontWeight: 700, fontSize: 11,
+                letterSpacing: '0.08em',
+                cursor: replicating ? 'not-allowed' : 'pointer',
+                transition: 'all 0.2s',
+                whiteSpace: 'nowrap',
+              }}
+              onMouseEnter={e => { if (!replicating) (e.currentTarget as HTMLButtonElement).style.background = '#E5E7EB'; }}
+              onMouseLeave={e => { if (!replicating) (e.currentTarget as HTMLButtonElement).style.background = '#F3F4F6'; }}
+            >
+              <Copy size={13} />
+              {replicating ? t('predictions.replicating') : t('predictions.replicateAll')}
+            </button>
           )}
           {dirtyCount > 0 && (
             <button
