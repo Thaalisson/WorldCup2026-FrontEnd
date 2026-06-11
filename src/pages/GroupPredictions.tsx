@@ -1,12 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { apiGet, apiPost } from '../services/api';
-import type { Team } from '../types';
+import type { Match, Team } from '../types';
+import { isMatchLocked } from '../utils/timezone';
 import { CheckCircle, Lock, Save, AlertCircle } from 'lucide-react';
 
 type Props = { poolId?: string };
-
-const LOCK_DATE = new Date('2026-06-11T18:00:00Z');
 
 type GroupPick = { firstPlaceTeamId: string; secondPlaceTeamId: string };
 type SavedPick = {
@@ -35,11 +34,20 @@ export function GroupPredictions({ poolId }: Props) {
   const [dirtyGroups, setDirtyGroups] = useState<Set<string>>(new Set());
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
   const saveMsgTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const isLocked = new Date() >= LOCK_DATE;
+  const groupFirstKickoff: Record<string, string> = {};
+  matches.filter(m => m.groupName).forEach(m => {
+    const g = m.groupName!;
+    if (!groupFirstKickoff[g] || m.kickoffAt < groupFirstKickoff[g]) groupFirstKickoff[g] = m.kickoffAt;
+  });
+  function isGroupLocked(group: string): boolean {
+    const first = groupFirstKickoff[group];
+    return first ? isMatchLocked(first) : false;
+  }
 
   const groups = Array.from(new Set(teams.map(t => t.groupName).filter(Boolean))).sort() as string[];
   const teamsByGroup: Record<string, Team[]> = {};
@@ -47,6 +55,7 @@ export function GroupPredictions({ poolId }: Props) {
 
   useEffect(() => {
     const loadTeams = apiGet<Team[]>('/teams').then(setTeams);
+    const loadMatches = apiGet<Match[]>('/matches').then(setMatches);
     const loadSaved = poolId
       ? apiGet<SavedPick[]>(`/group-predictions?poolId=${poolId}`)
           .then(data => {
@@ -57,7 +66,7 @@ export function GroupPredictions({ poolId }: Props) {
           .catch(err => setLoadError(err instanceof Error ? err.message : 'Erro ao carregar'))
       : Promise.resolve();
 
-    Promise.all([loadTeams, loadSaved]).catch(() => {}).finally(() => setLoading(false));
+    Promise.all([loadTeams, loadMatches, loadSaved]).catch(() => {}).finally(() => setLoading(false));
   }, [poolId]);
 
   function getPick(group: string): GroupPick {
@@ -76,11 +85,12 @@ export function GroupPredictions({ poolId }: Props) {
     const p = getPick(g);
     return p.firstPlaceTeamId && p.secondPlaceTeamId && p.firstPlaceTeamId !== p.secondPlaceTeamId;
   });
-  const dirtyReadyGroups = readyGroups.filter(g => dirtyGroups.has(g));
+  const dirtyReadyGroups = readyGroups.filter(g => dirtyGroups.has(g) && !isGroupLocked(g));
   const cleanSavedGroups = readyGroups.filter(g => !dirtyGroups.has(g) && saved[g]);
+  const allGroupsLocked = groups.length > 0 && groups.every(g => isGroupLocked(g));
 
   async function saveAll() {
-    if (!poolId || isLocked || saving || dirtyReadyGroups.length === 0) return;
+    if (!poolId || saving || dirtyReadyGroups.length === 0) return;
     setSaving(true);
     if (saveMsgTimer.current) clearTimeout(saveMsgTimer.current);
 
@@ -142,7 +152,7 @@ export function GroupPredictions({ poolId }: Props) {
             <span style={{ color: '#111827' }}>{t('groupPredictions.title')}</span>
             <span style={{ color: '#F97316' }}>{t('groupPredictions.titleHighlight')}</span>
           </h1>
-          {!isLocked && !loading && groups.length > 0 && (
+          {!allGroupsLocked && !loading && groups.length > 0 && (
             <p style={{ margin: '5px 0 0', fontSize: 12, color: '#6B7280' }}>
               {cleanSavedGroups.length}/{groups.length} {t('groupPredictions.groupsSaved')}
               {dirtyReadyGroups.length > 0 && (
@@ -154,7 +164,7 @@ export function GroupPredictions({ poolId }: Props) {
           )}
         </div>
 
-        {!isLocked && (
+        {!allGroupsLocked && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             {saveMsg && (
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 600, color: saveMsg.type === 'success' ? '#22C55E' : '#EF4444' }}>
@@ -189,7 +199,7 @@ export function GroupPredictions({ poolId }: Props) {
         )}
       </div>
 
-      {isLocked && (
+      {allGroupsLocked && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 16px', borderRadius: 10, background: '#EF444418', border: '1px solid #EF444440', color: '#EF4444', fontSize: 13, fontWeight: 600 }}>
           <Lock size={15} /> {t('groupPredictions.locked')}
         </div>
@@ -218,8 +228,11 @@ export function GroupPredictions({ poolId }: Props) {
             const isSaved = !!saved[group] && !isDirty;
             const hasSelections = !!(pick.firstPlaceTeamId && pick.secondPlaceTeamId);
             const pts = saved[group]?.pointsEarned ?? 0;
+            const groupLocked = isGroupLocked(group);
 
-            const borderColor = isSaved
+            const borderColor = groupLocked
+              ? '#E5E7EB'
+              : isSaved
               ? '#22C55E30'
               : isDirty
               ? '#F9731640'
@@ -239,10 +252,11 @@ export function GroupPredictions({ poolId }: Props) {
                         +{pts} pts
                       </span>
                     )}
-                    {isSaved && !isDirty && (
+                    {groupLocked && <Lock size={13} color="#9CA3AF" />}
+                    {!groupLocked && isSaved && !isDirty && (
                       <CheckCircle size={14} color="#22C55E" />
                     )}
-                    {isDirty && hasSelections && (
+                    {!groupLocked && isDirty && hasSelections && (
                       <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#F97316', display: 'inline-block' }} />
                     )}
                   </div>
@@ -263,9 +277,9 @@ export function GroupPredictions({ poolId }: Props) {
                     </label>
                     <select
                       value={pick.firstPlaceTeamId}
-                      disabled={isLocked}
+                      disabled={groupLocked}
                       onChange={e => handleChange(group, 'firstPlaceTeamId', e.target.value)}
-                      style={selectStyle(isLocked, !!pick.firstPlaceTeamId)}
+                      style={selectStyle(groupLocked, !!pick.firstPlaceTeamId)}
                     >
                       <option value="">{t('groupPredictions.chooseTeam')}</option>
                       {groupTeams.map(t => (
@@ -279,9 +293,9 @@ export function GroupPredictions({ poolId }: Props) {
                     </label>
                     <select
                       value={pick.secondPlaceTeamId}
-                      disabled={isLocked}
+                      disabled={groupLocked}
                       onChange={e => handleChange(group, 'secondPlaceTeamId', e.target.value)}
-                      style={selectStyle(isLocked, !!pick.secondPlaceTeamId)}
+                      style={selectStyle(groupLocked, !!pick.secondPlaceTeamId)}
                     >
                       <option value="">{t('groupPredictions.chooseTeam')}</option>
                       {groupTeams
