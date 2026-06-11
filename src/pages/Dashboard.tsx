@@ -120,7 +120,7 @@ function useNextMatchCountdown(kickoffAt: string | undefined) {
   return t;
 }
 
-const TOURNAMENT_START = new Date('2026-06-11T12:00:00Z');
+const TOURNAMENT_START = new Date('2026-06-11T18:00:00Z');
 
 function useCopaCDDown() {
   function calc() {

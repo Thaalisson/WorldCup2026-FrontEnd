@@ -6,7 +6,7 @@ import { CheckCircle, Lock, Save, AlertCircle } from 'lucide-react';
 
 type Props = { poolId?: string };
 
-const LOCK_DATE = new Date('2026-06-11T12:00:00Z');
+const LOCK_DATE = new Date('2026-06-11T18:00:00Z');
 
 type GroupPick = { firstPlaceTeamId: string; secondPlaceTeamId: string };
 type SavedPick = {
