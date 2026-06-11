@@ -234,7 +234,8 @@ export function Dashboard({ poolId, onGoToJogos, onGoToPrecopa, onGoToGroups, on
     .sort((a, b) => new Date(a.kickoffAt + 'Z').getTime() - new Date(b.kickoffAt + 'Z').getTime());
 
   const nextMatch = upcoming[0];
-  const pendingCount = upcoming.length;
+  const predictedIds = new Set(predictions.map(p => p.matchId));
+  const pendingCount = upcoming.filter(m => !predictedIds.has(m.id)).length;
   const totalMatches = realMatches.length;
   const doneCount = predictions.length;
   const donePct = totalMatches > 0 ? Math.round((doneCount / totalMatches) * 100) : 0;
