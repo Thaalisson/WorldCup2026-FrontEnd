@@ -138,9 +138,19 @@ export function MatchCard({ match, home, away, isSaved, isDirty, onChange, onBlu
               )}
             </div>
           ) : locked ? (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, color: '#D1D5DB' }}>
-              <Lock style={{ width: 14, height: 14 }} />
-              <span style={{ fontSize: 9, letterSpacing: '0.08em' }}>{t('matchCard.locked')}</span>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+              {isSaved ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <div style={{ width: 36, height: 36, background: '#F9FAFB', border: '1px solid #E5E7EB', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, fontWeight: 900, color: '#6B7280' }}>{home}</div>
+                  <span style={{ color: '#D1D5DB', fontWeight: 700 }}>×</span>
+                  <div style={{ width: 36, height: 36, background: '#F9FAFB', border: '1px solid #E5E7EB', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, fontWeight: 900, color: '#6B7280' }}>{away}</div>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, color: '#D1D5DB' }}>
+                  <Lock style={{ width: 14, height: 14 }} />
+                  <span style={{ fontSize: 9, letterSpacing: '0.08em' }}>{t('matchCard.locked')}</span>
+                </div>
+              )}
             </div>
           ) : (
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
