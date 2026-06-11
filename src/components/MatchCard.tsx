@@ -123,10 +123,19 @@ export function MatchCard({ match, home, away, isSaved, isDirty, onChange, onBlu
         {/* Center */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, flexShrink: 0 }}>
           {match.isFinished ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <div style={{ width: 36, height: 36, background: '#F3F4F6', border: '1px solid #E5E7EB', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, fontWeight: 900, color: '#111827' }}>{match.homeScore}</div>
-              <span style={{ color: '#D1D5DB', fontWeight: 700 }}>–</span>
-              <div style={{ width: 36, height: 36, background: '#F3F4F6', border: '1px solid #E5E7EB', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, fontWeight: 900, color: '#111827' }}>{match.awayScore}</div>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <div style={{ width: 36, height: 36, background: '#F3F4F6', border: '1px solid #E5E7EB', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, fontWeight: 900, color: '#111827' }}>{match.homeScore}</div>
+                <span style={{ color: '#D1D5DB', fontWeight: 700 }}>–</span>
+                <div style={{ width: 36, height: 36, background: '#F3F4F6', border: '1px solid #E5E7EB', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, fontWeight: 900, color: '#111827' }}>{match.awayScore}</div>
+              </div>
+              {isSaved ? (
+                <div style={{ fontSize: 10, color: '#9CA3AF', fontWeight: 600 }}>
+                  {t('matchCard.yourPick')}: <span style={{ color: '#6B7280', fontWeight: 800 }}>{home} × {away}</span>
+                </div>
+              ) : (
+                <div style={{ fontSize: 10, color: '#D1D5DB', fontWeight: 500 }}>{t('matchCard.noBet')}</div>
+              )}
             </div>
           ) : locked ? (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, color: '#D1D5DB' }}>

@@ -229,7 +229,8 @@
     "correctResult": "🟡 Resultado certo",
     "wrong": "❌ Errou",
     "betSaved": "Palpite salvo",
-    "noBet": "Sem palpite"
+    "noBet": "Sem palpite",
+    "yourPick": "Seu palpite"
   },
   "champion": {
     "title": "PRÉ-",

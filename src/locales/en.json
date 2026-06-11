@@ -229,7 +229,8 @@
     "correctResult": "🟡 Correct result",
     "wrong": "❌ Wrong",
     "betSaved": "Prediction saved",
-    "noBet": "No prediction"
+    "noBet": "No prediction",
+    "yourPick": "Your pick"
   },
   "champion": {
     "title": "PRE-",
