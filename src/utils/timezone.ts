@@ -29,6 +29,6 @@ export function formatBrazilTime(isoString: string): string {
 }
 
 export function isMatchLocked(kickoffAt: string): boolean {
-  const twoHoursBefore = new Date(toUtcDate(kickoffAt).getTime() - 2 * 60 * 60 * 1000);
-  return twoHoursBefore <= new Date();
+  const oneHourBefore = new Date(toUtcDate(kickoffAt).getTime() - 1 * 60 * 60 * 1000);
+  return oneHourBefore <= new Date();
 }

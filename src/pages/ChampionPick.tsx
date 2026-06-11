@@ -8,7 +8,7 @@ type Props = { poolId: string };
 type SaveState = 'idle' | 'saving' | 'saved' | 'error';
 
 // Tournament starts June 11, 2026 — predictions locked from that date
-const TOURNAMENT_START = new Date('2026-06-11T12:00:00Z');
+const TOURNAMENT_START = new Date('2026-06-11T18:00:00Z');
 
 function useLockCDDown() {
   function calc() {
