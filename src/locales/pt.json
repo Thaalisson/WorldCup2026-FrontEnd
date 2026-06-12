@@ -189,6 +189,7 @@
     "eventExact": "PLACAR EXATO",
     "eventCorrect": "SÓ O VENCEDOR",
     "eventWrong": "ERROU",
+    "eventPartial": "PARCIAL",
     "feedYourGuess": "Palpitou {{score}}"
   },
   "predictions": {

@@ -189,6 +189,7 @@
     "eventExact": "EXACT SCORE",
     "eventCorrect": "WINNER ONLY",
     "eventWrong": "MISSED",
+    "eventPartial": "PARTIAL",
     "feedYourGuess": "Predicted {{score}}"
   },
   "predictions": {

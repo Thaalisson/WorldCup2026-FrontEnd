@@ -198,6 +198,7 @@ export function Dashboard({ poolId, onGoToJogos, onGoToPrecopa, onGoToGroups, on
     1: { bg: '#22C55E18', color: '#22C55E', label: t('dashboard.eventExact'), icon: '🎯' },
     2: { bg: '#F9731618', color: '#F97316', label: t('dashboard.eventCorrect'), icon: '✓' },
     3: { bg: '#6B728018', color: '#6B7280', label: t('dashboard.eventWrong'), icon: '○' },
+    4: { bg: '#3B82F618', color: '#3B82F6', label: t('dashboard.eventPartial'), icon: '≈' },
   } as const;
 
   useEffect(() => {
