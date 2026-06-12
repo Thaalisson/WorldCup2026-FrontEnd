@@ -809,6 +809,19 @@ export function Dashboard({ poolId, onGoToJogos, onGoToPrecopa, onGoToGroups, on
                     <p style={{ margin: 0, fontSize: 10, color: '#6B7280', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {evt.matchLabel}
                     </p>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 3, flexWrap: 'wrap' }}>
+                      {evt.predictionLabel && (
+                        <span style={{ fontSize: 10, color: '#374151', fontWeight: 600 }}>
+                          {t('dashboard.feedYourGuess', { score: evt.predictionLabel })}
+                        </span>
+                      )}
+                      <span style={{
+                        fontSize: 9, fontWeight: 800, color: ev.color, background: ev.bg,
+                        padding: '1px 6px', borderRadius: 6, whiteSpace: 'nowrap', letterSpacing: 0.3,
+                      }}>
+                        {ev.icon} {ev.label}
+                      </span>
+                    </div>
                   </div>
                   <div style={{ textAlign: 'right', flexShrink: 0 }}>
                     <p style={{ margin: 0, fontSize: 14, fontWeight: 900, color: ev.color }}>+{evt.points}</p>

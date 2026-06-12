@@ -80,6 +80,7 @@ export type FeedEvent = {
   eventTypeName: string;
   points: number;
   occurredAt: string;
+  predictionLabel: string;
 };
 
 export type GroupStanding = {

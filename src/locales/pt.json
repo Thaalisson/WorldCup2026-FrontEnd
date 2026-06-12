@@ -186,9 +186,10 @@
     "worldCupStarts": "Copa do Mundo inicia em 11/06/2026 🔥",
     "makeBetsNow": "FAZER PALPITES AGORA →",
     "createPoolFirst": "CRIAR / ENTRAR EM BOLÃO →",
-    "eventExact": "EXATO",
-    "eventCorrect": "CERTO",
-    "eventWrong": "ZERO"
+    "eventExact": "PLACAR EXATO",
+    "eventCorrect": "SÓ O VENCEDOR",
+    "eventWrong": "ERROU",
+    "feedYourGuess": "Palpitou {{score}}"
   },
   "predictions": {
     "title": "CENTRAL DE",

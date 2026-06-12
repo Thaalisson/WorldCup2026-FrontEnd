@@ -186,9 +186,10 @@
     "worldCupStarts": "World Cup starts on 06/11/2026 🔥",
     "makeBetsNow": "MAKE PREDICTIONS NOW →",
     "createPoolFirst": "CREATE / JOIN A POOL →",
-    "eventExact": "EXACT",
-    "eventCorrect": "CORRECT",
-    "eventWrong": "MISS"
+    "eventExact": "EXACT SCORE",
+    "eventCorrect": "WINNER ONLY",
+    "eventWrong": "MISSED",
+    "feedYourGuess": "Predicted {{score}}"
   },
   "predictions": {
     "title": "PREDICTION",
