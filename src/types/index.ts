@@ -83,6 +83,32 @@ export type FeedEvent = {
   predictionLabel: string;
 };
 
+export type PoolReportGame = {
+  matchLabel: string;
+  predictionLabel: string;
+  points: number;
+  outcome: 'exato' | 'vencedor' | 'errou' | 'sem_palpite';
+};
+
+export type PoolReportPlayer = {
+  userName: string;
+  position: number;
+  totalPoints: number;
+  exatos: number;
+  vencedor: number;
+  erros: number;
+  semPalpite: number;
+  games: PoolReportGame[];
+};
+
+export type PoolReport = {
+  poolName: string;
+  exactPoints: number;
+  correctPoints: number;
+  finishedCount: number;
+  players: PoolReportPlayer[];
+};
+
 export type GroupStanding = {
   teamId: string;
   teamName: string;

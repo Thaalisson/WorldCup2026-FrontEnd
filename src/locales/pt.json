@@ -39,6 +39,7 @@
     "knockout": "MATA-MATA",
     "myPools": "MEUS BOLÕES",
     "ranking": "RANKING",
+    "report": "RELATÓRIO",
     "performance": "PERFORMANCE",
     "stats": "STATS",
     "teams": "SELEÇÕES",
@@ -96,6 +97,7 @@
     "noPoolForBets": "Selecione ou crie um bolão para fazer palpites.",
     "noPoolForChampion": "Selecione ou crie um bolão para fazer palpite de campeão.",
     "noPoolForRanking": "Selecione um bolão para ver o ranking.",
+    "noPoolForReport": "Selecione um bolão para ver o relatório.",
     "noPoolForPerformance": "Selecione um bolão para ver sua performance.",
     "noPoolForSettings": "Selecione um bolão para configurar.",
     "adminOnly": "Acesso restrito a administradores."
@@ -314,6 +316,15 @@
     "r16": "Oitavas",
     "qf": "Quartas",
     "sf": "Semifinal"
+  },
+  "report": {
+    "title": "RELATÓRIO DE ",
+    "titleHighlight": "PONTOS",
+    "subtitle": "Placar exato = {{exact}} · vencedor/empate = {{correct}} · errou = 0 · {{games}} jogos",
+    "loading": "Carregando relatório...",
+    "loadError": "Erro ao carregar o relatório.",
+    "guess": "Palpitou {{score}}",
+    "noGuess": "Não palpitou"
   },
   "ranking": {
     "title": "RANKING ",

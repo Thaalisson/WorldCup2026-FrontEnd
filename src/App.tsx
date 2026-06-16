@@ -17,12 +17,13 @@ import { Knockout } from './pages/Knockout';
 import { AdminPanel } from './pages/AdminPanel';
 import { PoolSettings } from './pages/PoolSettings';
 import { Performance } from './pages/Performance';
+import { Report } from './pages/Report';
 import { apiGet, apiPost, apiDelete } from './services/api';
 import type { Pool, Match } from './types';
 import { useToast } from './context/ToastContext';
-import { Plus, Hash, X, ChevronDown, Shield, Copy, Check, Share2, Users, Home, Zap, Star, BarChart2, Trophy, Flag, Target, MoreHorizontal, GitMerge, TrendingUp } from 'lucide-react';
+import { Plus, Hash, X, ChevronDown, Shield, Copy, Check, Share2, Users, Home, Zap, Star, BarChart2, Trophy, Flag, Target, MoreHorizontal, GitMerge, TrendingUp, ClipboardList } from 'lucide-react';
 
-type Page = 'dashboard' | 'jogos' | 'precopa' | 'grupos' | 'grouppreds' | 'knockout' | 'boloes' | 'ranking' | 'stats' | 'performance' | 'selecoes' | 'admin' | 'settings';
+type Page = 'dashboard' | 'jogos' | 'precopa' | 'grupos' | 'grouppreds' | 'knockout' | 'boloes' | 'ranking' | 'stats' | 'performance' | 'selecoes' | 'report' | 'admin' | 'settings';
 
 const MOBILE_TABS = [
   { id: 'dashboard',  icon: <Home size={20} />,         label: 'Início' },
@@ -80,6 +81,7 @@ function MainApp() {
     { id: 'knockout',    label: t('nav.knockout'),     icon: <GitMerge size={11} /> },
     { id: 'boloes',      label: t('nav.myPools'),      icon: <Users size={11} /> },
     { id: 'ranking',     label: t('nav.ranking'),      icon: <Trophy size={11} /> },
+    { id: 'report',      label: t('nav.report'),       icon: <ClipboardList size={11} /> },
     { id: 'performance', label: t('nav.performance'),  icon: <TrendingUp size={11} /> },
     { id: 'stats',       label: t('nav.stats'),        icon: <BarChart2 size={11} /> },
     { id: 'selecoes',    label: t('nav.teams'),        icon: <Flag size={11} /> },
@@ -393,6 +395,7 @@ function MainApp() {
             </div>
             {[
               { id: 'precopa' as Page,     label: t('nav.precopa'),     icon: <Star size={16} /> },
+              { id: 'report' as Page,      label: t('nav.report'),      icon: <ClipboardList size={16} /> },
               { id: 'performance' as Page, label: t('nav.performance'), icon: <TrendingUp size={16} /> },
               { id: 'boloes' as Page,      label: t('nav.myPools'),     icon: <Users size={16} /> },
               { id: 'stats' as Page,       label: t('nav.stats'),       icon: <BarChart2 size={16} /> },
@@ -730,6 +733,8 @@ function MainApp() {
         )}
         {page === 'ranking' && activePoolId && <Ranking poolId={activePoolId} />}
         {page === 'ranking' && !activePoolId && <EmptyState icon="🏅" text={t('app.noPoolForRanking')} />}
+        {page === 'report' && activePoolId && <Report poolId={activePoolId} />}
+        {page === 'report' && !activePoolId && <EmptyState icon="📋" text={t('app.noPoolForReport')} />}
         {page === 'performance' && activePoolId && <Performance poolId={activePoolId} />}
         {page === 'performance' && !activePoolId && <EmptyState icon="📊" text={t('app.noPoolForPerformance')} />}
         {page === 'stats' && <Stats poolId={activePoolId || undefined} />}

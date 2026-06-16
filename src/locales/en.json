@@ -54,6 +54,7 @@
     "games": "Games",
     "groups": "Groups",
     "ranking": "Ranking",
+    "report": "REPORT",
     "more": "More",
     "createPool": "CREATE POOL",
     "joinPool": "JOIN WITH CODE"
@@ -96,6 +97,7 @@
     "noPoolForBets": "Select or create a pool to make predictions.",
     "noPoolForChampion": "Select or create a pool to predict the champion.",
     "noPoolForRanking": "Select a pool to see the ranking.",
+    "noPoolForReport": "Select a pool to see the report.",
     "noPoolForPerformance": "Select a pool to see your performance.",
     "noPoolForSettings": "Select a pool to configure.",
     "adminOnly": "Access restricted to administrators."
@@ -314,6 +316,15 @@
     "r16": "Round of 16",
     "qf": "Quarters",
     "sf": "Semi-final"
+  },
+  "report": {
+    "title": "POINTS ",
+    "titleHighlight": "REPORT",
+    "subtitle": "Exact score = {{exact}} · winner/draw = {{correct}} · miss = 0 · {{games}} games",
+    "loading": "Loading report...",
+    "loadError": "Failed to load the report.",
+    "guess": "Predicted {{score}}",
+    "noGuess": "No prediction"
   },
   "ranking": {
     "title": "POOL ",
