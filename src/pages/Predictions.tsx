@@ -39,6 +39,8 @@ export function Predictions({ poolId, totalPools = 1 }: Props) {
   const [dateFilter, setDateFilter] = useState<DateFilter>('all');
   const saveMsgTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const debounceTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+  // Espelho dos scores sempre atualizado — o autosave lê daqui (nunca de um snapshot velho).
+  const scoresRef = useRef<Record<string, ScoreEntry>>({});
 
   useEffect(() => {
     Promise.all([
@@ -53,6 +55,7 @@ export function Predictions({ poolId, totalPools = 1 }: Props) {
           initScores[p.matchId] = { home: p.homeScorePrediction, away: p.awayScorePrediction };
           initSaved.add(p.matchId);
         }
+        scoresRef.current = initScores;
         setScores(initScores);
         setSavedIds(initSaved);
       })
@@ -61,16 +64,19 @@ export function Predictions({ poolId, totalPools = 1 }: Props) {
   }, [poolId]);
 
   function handleChange(matchId: string, home: number, away: number) {
+    scoresRef.current = { ...scoresRef.current, [matchId]: { home, away } };
     setScores(prev => ({ ...prev, [matchId]: { home, away } }));
     setDirtyIds(prev => new Set([...prev, matchId]));
   }
 
   function saveSingle(matchId: string) {
-    if (!dirtyIds.has(matchId)) return;
     if (debounceTimers.current[matchId]) clearTimeout(debounceTimers.current[matchId]);
-    const sc = scores[matchId] ?? { home: 0, away: 0 };
+    // Lê o valor MAIS RECENTE no momento em que o timer dispara (não um snapshot do blur),
+    // garantindo que mandante E visitante sejam salvos juntos mesmo digitando rápido.
     debounceTimers.current[matchId] = setTimeout(async () => {
       delete debounceTimers.current[matchId];
+      const sc = scoresRef.current[matchId];
+      if (!sc) return;
       try {
         await apiPost<{ saved: number; skipped: number }>('/predictions/bulk', {
           poolId,
@@ -81,7 +87,7 @@ export function Predictions({ poolId, totalPools = 1 }: Props) {
       } catch {
         // silent — botão salvar como fallback
       }
-    }, 300);
+    }, 700);
   }
 
   async function saveAll() {
