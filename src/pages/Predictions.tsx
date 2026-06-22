@@ -67,6 +67,9 @@ export function Predictions({ poolId, totalPools = 1 }: Props) {
     scoresRef.current = { ...scoresRef.current, [matchId]: { home, away } };
     setScores(prev => ({ ...prev, [matchId]: { home, away } }));
     setDirtyIds(prev => new Set([...prev, matchId]));
+    // Autosave a cada digitação (debounced): garante que o último valor completo
+    // (mandante E visitante) seja salvo mesmo sem sair do campo / clicar em salvar.
+    saveSingle(matchId);
   }
 
   function saveSingle(matchId: string) {
