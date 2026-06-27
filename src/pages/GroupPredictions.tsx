@@ -44,10 +44,9 @@ export function GroupPredictions({ poolId }: Props) {
     const g = m.groupName!;
     if (!groupFirstKickoff[g] || m.kickoffAt < groupFirstKickoff[g]) groupFirstKickoff[g] = m.kickoffAt;
   });
-  // Bloqueio por início do grupo REMOVIDO a pedido do dono do bolão (reabertura).
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  function isGroupLocked(_group: string): boolean {
-    return false;
+  function isGroupLocked(group: string): boolean {
+    const first = groupFirstKickoff[group];
+    return first ? isMatchLocked(first) : false;
   }
 
   const groups = Array.from(new Set(teams.map(t => t.groupName).filter(Boolean))).sort() as string[];
