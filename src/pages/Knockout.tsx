@@ -23,7 +23,7 @@ function getTop(round: number, idx: number) { return getCenter(round, idx) - H /
 
 // ── Types ──────────────────────────────────────────────────────
 type Team       = { label: string; name?: string; isoCode?: string };
-type BMatch     = { id: string; home: Team; away: Team; winner?: 'home' | 'away' };
+type BMatch     = { id: string; home: Team; away: Team; winner?: 'home' | 'away'; kickoffAt?: string };
 type HalfState  = [BMatch[], BMatch[], BMatch[], BMatch[]];
 type BracketState = { left: HalfState; right: HalfState; final: BMatch; third: BMatch };
 
@@ -124,6 +124,57 @@ function advanceTeam(
   return { ...state, [side]: half, final: { ...state.final, [side === 'left' ? 'home' : 'away']: team } };
 }
 
+// ── Lock helpers ───────────────────────────────────────────────
+const LOCK_BEFORE_MS = 30 * 60 * 1000;
+
+function isLocked(match: BMatch): boolean {
+  if (!match.kickoffAt) return false;
+  return Date.now() >= new Date(match.kickoffAt).getTime() - LOCK_BEFORE_MS;
+}
+
+function msUntilLock(match: BMatch): number {
+  if (!match.kickoffAt) return Infinity;
+  return new Date(match.kickoffAt).getTime() - LOCK_BEFORE_MS - Date.now();
+}
+
+function fmtCountdown(ms: number): string {
+  if (ms <= 0) return 'Fechado';
+  const totalMin = Math.ceil(ms / 60000);
+  const h = Math.floor(totalMin / 60);
+  const m = totalMin % 60;
+  if (h >= 24) return `${Math.floor(h / 24)}d ${h % 24}h`;
+  if (h > 0) return `${h}h${m > 0 ? ` ${m}min` : ''}`;
+  return `${m}min`;
+}
+
+function patchKickoffs(bracket: BracketState, times: {
+  leftR32: string[]; rightR32: string[];
+  leftR16: string[]; rightR16: string[];
+  leftQF:  string[]; rightQF:  string[];
+  leftSF:  string[]; rightSF:  string[];
+  final?:  string;   third?:   string;
+}): BracketState {
+  const patch = (matches: BMatch[], ts: string[]): BMatch[] =>
+    matches.map((m, i) => ts[i] ? { ...m, kickoffAt: ts[i] } : m);
+  return {
+    ...bracket,
+    left: [
+      patch(bracket.left[0], times.leftR32),
+      patch(bracket.left[1], times.leftR16),
+      patch(bracket.left[2], times.leftQF),
+      patch(bracket.left[3], times.leftSF),
+    ] as HalfState,
+    right: [
+      patch(bracket.right[0], times.rightR32),
+      patch(bracket.right[1], times.rightR16),
+      patch(bracket.right[2], times.rightQF),
+      patch(bracket.right[3], times.rightSF),
+    ] as HalfState,
+    final: times.final ? { ...bracket.final, kickoffAt: times.final } : bracket.final,
+    third: times.third ? { ...bracket.third, kickoffAt: times.third } : bracket.third,
+  };
+}
+
 // ── Shared flag ────────────────────────────────────────────────
 function TeamFlag({ isoCode, size }: { isoCode?: string; size: number }) {
   if (isoCode) return (
@@ -140,24 +191,25 @@ function TeamFlag({ isoCode, size }: { isoCode?: string; size: number }) {
 // DESKTOP COMPONENTS
 // ═══════════════════════════════════════════════════════════════
 
-function DeskTeamRow({ team, isWinner, isLoser, canClick, onClick }: {
-  team: Team; isWinner?: boolean; isLoser?: boolean; canClick: boolean; onClick: () => void;
+function DeskTeamRow({ team, isWinner, isLoser, canClick, locked, onClick }: {
+  team: Team; isWinner?: boolean; isLoser?: boolean; canClick: boolean; locked?: boolean; onClick: () => void;
 }) {
   const hasReal = !!team.name;
   const isBlank = team.label === '—';
+  const clickable = canClick && !locked;
   const bg = isWinner ? '#F0FDF4' : 'transparent';
   return (
     <button
-      onClick={canClick ? onClick : undefined}
+      onClick={clickable ? onClick : undefined}
       title={hasReal ? `${team.name} (${team.label})` : team.label}
       style={{
         display: 'flex', alignItems: 'center', gap: 6, padding: '6px 8px 6px 6px',
         width: '100%', background: bg, border: 'none',
         borderLeft: isWinner ? '3px solid #16A34A' : '3px solid transparent',
-        cursor: canClick ? 'pointer' : 'default', textAlign: 'left',
+        cursor: clickable ? 'pointer' : 'default', textAlign: 'left',
         opacity: isLoser ? 0.35 : 1, transition: 'background 0.1s',
       }}
-      onMouseEnter={e => { if (canClick) (e.currentTarget as HTMLButtonElement).style.background = isWinner ? '#DCFCE7' : '#FFF7ED'; }}
+      onMouseEnter={e => { if (clickable) (e.currentTarget as HTMLButtonElement).style.background = isWinner ? '#DCFCE7' : '#FFF7ED'; }}
       onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = bg; }}
     >
       <TeamFlag isoCode={team.isoCode} size={22} />
@@ -169,21 +221,35 @@ function DeskTeamRow({ team, isWinner, isLoser, canClick, onClick }: {
         {hasReal ? team.name : team.label}
       </span>
       {isWinner && <span style={{ color: '#16A34A', fontSize: 11, fontWeight: 900, flexShrink: 0 }}>✓</span>}
+      {locked && !isWinner && <span style={{ fontSize: 10, flexShrink: 0 }}>🔒</span>}
     </button>
   );
 }
 
 function DeskMatchSlot({ match, onAdvance }: { match: BMatch; onAdvance: (w: 'home' | 'away') => void }) {
-  const canClick = match.home.label !== '—' && match.away.label !== '—' && !match.winner;
+  const locked = isLocked(match);
+  const canClick = match.home.label !== '—' && match.away.label !== '—' && !match.winner && !locked;
+  const ms = msUntilLock(match);
+  const showBadge = ms !== Infinity && ms < 24 * 60 * 60 * 1000;
+  const borderColor = match.winner ? '#BBF7D0' : locked ? '#FCA5A5' : '#E2E8F0';
   return (
-    <div style={{
-      width: COL_W, border: `1px solid ${match.winner ? '#BBF7D0' : '#E2E8F0'}`,
-      borderRadius: 8, overflow: 'hidden', background: '#fff',
-      boxShadow: match.winner ? '0 2px 8px rgba(22,163,74,0.12)' : '0 1px 4px rgba(15,23,42,0.06)',
-    }}>
-      <DeskTeamRow team={match.home} isWinner={match.winner==='home'} isLoser={match.winner==='away'} canClick={canClick} onClick={() => onAdvance('home')} />
-      <div style={{ height: 1, background: '#F1F5F9' }} />
-      <DeskTeamRow team={match.away} isWinner={match.winner==='away'} isLoser={match.winner==='home'} canClick={canClick} onClick={() => onAdvance('away')} />
+    <div style={{ width: COL_W }}>
+      <div style={{
+        border: `1px solid ${borderColor}`, borderRadius: 8, overflow: 'hidden', background: '#fff',
+        boxShadow: match.winner ? '0 2px 8px rgba(22,163,74,0.12)' : locked ? '0 2px 8px rgba(239,68,68,0.08)' : '0 1px 4px rgba(15,23,42,0.06)',
+      }}>
+        <DeskTeamRow team={match.home} isWinner={match.winner==='home'} isLoser={match.winner==='away'} canClick={canClick} locked={locked} onClick={() => onAdvance('home')} />
+        <div style={{ height: 1, background: '#F1F5F9' }} />
+        <DeskTeamRow team={match.away} isWinner={match.winner==='away'} isLoser={match.winner==='home'} canClick={canClick} locked={locked} onClick={() => onAdvance('away')} />
+      </div>
+      {showBadge && (
+        <div style={{
+          marginTop: 3, textAlign: 'center', fontSize: 9, fontWeight: 700, letterSpacing: '0.04em',
+          color: locked ? '#EF4444' : ms < 60 * 60 * 1000 ? '#F97316' : '#94A3B8',
+        }}>
+          {locked ? '🔒 FECHADO' : `fecha em ${fmtCountdown(ms)}`}
+        </div>
+      )}
     </div>
   );
 }
@@ -257,7 +323,10 @@ function HalfBracket({ half, side, labels, onAdvance }: {
 // ═══════════════════════════════════════════════════════════════
 
 function MobileMatchCard({ match, onAdvance }: { match: BMatch; onAdvance: (w: 'home' | 'away') => void }) {
-  const canClick = match.home.label !== '—' && match.away.label !== '—' && !match.winner;
+  const locked = isLocked(match);
+  const canClick = match.home.label !== '—' && match.away.label !== '—' && !match.winner && !locked;
+  const ms = msUntilLock(match);
+  const showBadge = ms !== Infinity && ms < 24 * 60 * 60 * 1000;
 
   function TeamBtn({ side }: { side: 'home' | 'away' }) {
     const team = match[side];
@@ -299,6 +368,9 @@ function MobileMatchCard({ match, onAdvance }: { match: BMatch; onAdvance: (w: '
             <span style={{ color: '#fff', fontSize: 13, fontWeight: 900, lineHeight: 1 }}>✓</span>
           </div>
         )}
+        {locked && !isWinner && !match.winner && (
+          <span style={{ fontSize: 16, flexShrink: 0 }}>🔒</span>
+        )}
         {canClick && (
           <span style={{ fontSize: 18, color: '#CBD5E1', flexShrink: 0, lineHeight: 1 }}>›</span>
         )}
@@ -309,10 +381,22 @@ function MobileMatchCard({ match, onAdvance }: { match: BMatch; onAdvance: (w: '
   return (
     <div style={{
       background: '#fff', borderRadius: 14,
-      border: `1px solid ${match.winner ? '#BBF7D0' : '#E2E8F0'}`,
+      border: `1px solid ${match.winner ? '#BBF7D0' : locked ? '#FCA5A5' : '#E2E8F0'}`,
       overflow: 'hidden',
-      boxShadow: match.winner ? '0 3px 12px rgba(22,163,74,0.12)' : '0 1px 6px rgba(15,23,42,0.07)',
+      boxShadow: match.winner ? '0 3px 12px rgba(22,163,74,0.12)' : locked ? '0 2px 8px rgba(239,68,68,0.08)' : '0 1px 6px rgba(15,23,42,0.07)',
     }}>
+      {showBadge && (
+        <div style={{
+          padding: '6px 16px', fontSize: 11, fontWeight: 700,
+          background: locked ? '#FEF2F2' : ms < 60 * 60 * 1000 ? '#FFF7ED' : '#F8FAFC',
+          color: locked ? '#EF4444' : ms < 60 * 60 * 1000 ? '#F97316' : '#64748B',
+          display: 'flex', alignItems: 'center', gap: 6,
+          borderBottom: `1px solid ${locked ? '#FCA5A5' : '#E2E8F0'}`,
+        }}>
+          <span>{locked ? '🔒' : '⏰'}</span>
+          <span>{locked ? 'Palpites fechados' : `Fecha em ${fmtCountdown(ms)}`}</span>
+        </div>
+      )}
       <TeamBtn side="home" />
       <div style={{ height: 1, background: '#F1F5F9', margin: '0 16px' }} />
       <TeamBtn side="away" />
@@ -495,6 +579,7 @@ export function Knockout() {
   const [teamsLoaded, setTeamsLoaded] = useState(false);
   const [loading, setLoading]         = useState(true);
   const [isMobile, setIsMobile]       = useState(() => window.innerWidth < 768);
+  const [, setTick]                   = useState(0);
   const resetBase = useRef<BracketState | null>(null);
 
   // Responsive
@@ -504,30 +589,59 @@ export function Knockout() {
     return () => window.removeEventListener('resize', onResize);
   }, []);
 
-  // Fetch real teams from API
+  // 30-second tick to refresh lock state / countdown displays
+  useEffect(() => {
+    const id = setInterval(() => setTick(n => n + 1), 30_000);
+    return () => clearInterval(id);
+  }, []);
+
+  // Fetch real teams + kickoff times for all stages from API
   useEffect(() => {
     apiGet<MatchDto[]>('/matches')
       .then(all => {
-        const r32 = all
-          .filter(m => m.stage === 'Rodada de 32')
+        const byStage = (stage: string) => all
+          .filter(m => m.stage === stage)
           .sort((a, b) => new Date(a.kickoffAt).getTime() - new Date(b.kickoffAt).getTime());
-        if (r32.length < 8) return;
+
+        const r32all = byStage('Rodada de 32');
+        if (r32all.length < 8) return;
+
+        const r16all  = byStage('Oitavas de final');
+        const qfall   = byStage('Quartas de final');
+        const sfall   = byStage('Semifinal');
+        const finals  = byStage('Final');
+        const thirds  = byStage('Disputa de 3º lugar');
 
         const toTeam = (tm: MatchDto['homeTeam'], fallback: Team): Team =>
           tm.code && tm.name ? { label: tm.code, name: tm.name, isoCode: tm.isoCode ?? undefined } : fallback;
 
-        const newL32 = r32.slice(0, 8).map((m, i) => ({
+        const newL32 = r32all.slice(0, 8).map((m, i) => ({
           id: `l32-${i}`,
           home: toTeam(m.homeTeam, L32_INIT[i]?.home ?? { label: '—' }),
           away: toTeam(m.awayTeam, L32_INIT[i]?.away ?? { label: '—' }),
+          kickoffAt: m.kickoffAt,
         }));
-        const newR32 = r32.slice(8, 16).map((m, i) => ({
+        const newR32 = r32all.slice(8, 16).map((m, i) => ({
           id: `r32-${i}`,
           home: toTeam(m.homeTeam, R32_INIT[i]?.home ?? { label: '—' }),
           away: toTeam(m.awayTeam, R32_INIT[i]?.away ?? { label: '—' }),
+          kickoffAt: m.kickoffAt,
         }));
 
-        const fresh = initBracket(newL32, newR32);
+        let fresh = initBracket(newL32, newR32);
+        fresh = patchKickoffs(fresh, {
+          leftR32:  newL32.map(m => m.kickoffAt),
+          rightR32: newR32.map(m => m.kickoffAt),
+          leftR16:  r16all.slice(0, 4).map(m => m.kickoffAt),
+          rightR16: r16all.slice(4, 8).map(m => m.kickoffAt),
+          leftQF:   qfall.slice(0, 2).map(m => m.kickoffAt),
+          rightQF:  qfall.slice(2, 4).map(m => m.kickoffAt),
+          leftSF:   sfall.slice(0, 1).map(m => m.kickoffAt),
+          rightSF:  sfall.slice(1, 2).map(m => m.kickoffAt),
+          final:    finals[0]?.kickoffAt,
+          third:    thirds[0]?.kickoffAt,
+        });
+
         resetBase.current = fresh;
 
         // Restore saved picks on top of fresh real-team bracket
@@ -558,6 +672,17 @@ export function Knockout() {
     setBracket(resetBase.current ?? initBracket());
   }
 
+  // Gather all BMatches for countdown banner calculation
+  const allMatches = [
+    ...bracket.left[0], ...bracket.left[1], ...bracket.left[2], ...bracket.left[3],
+    ...bracket.right[0], ...bracket.right[1], ...bracket.right[2], ...bracket.right[3],
+    bracket.final, bracket.third,
+  ];
+  const nextToLock = allMatches
+    .filter(m => m.kickoffAt && !isLocked(m))
+    .sort((a, b) => msUntilLock(a) - msUntilLock(b))[0];
+  const nextMs = nextToLock ? msUntilLock(nextToLock) : Infinity;
+
   const DESK_LABELS: RoundLabel[] = [
     { text: t('knockout.r32'), color: '#6366F1' }, { text: t('knockout.r16'), color: '#8B5CF6' },
     { text: t('knockout.qf'),  color: '#A855F7' }, { text: t('knockout.sf'),  color: '#C084FC' },
@@ -587,6 +712,26 @@ export function Knockout() {
           ↺ {t('knockout.resetBracket')}
         </button>
       </div>
+
+      {/* Global countdown banner — only within 24h of next lock */}
+      {nextToLock && nextMs < 24 * 60 * 60 * 1000 && (
+        <div style={{
+          background: nextMs < 60 * 60 * 1000 ? '#FFF7ED' : '#F0F9FF',
+          border: `1px solid ${nextMs < 60 * 60 * 1000 ? '#FED7AA' : '#BAE6FD'}`,
+          borderRadius: 10, padding: '10px 16px',
+          display: 'flex', alignItems: 'center', gap: 10,
+        }}>
+          <span style={{ fontSize: 18, flexShrink: 0 }}>{nextMs < 60 * 60 * 1000 ? '⚠️' : '⏰'}</span>
+          <div>
+            <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: nextMs < 60 * 60 * 1000 ? '#C2410C' : '#0369A1' }}>
+              Próximo fechamento em {fmtCountdown(nextMs)}
+            </p>
+            <p style={{ margin: 0, fontSize: 11, color: '#64748B' }}>
+              Palpites são bloqueados 30 minutos antes de cada jogo
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* TBD banner */}
       {!loading && !teamsLoaded && (
