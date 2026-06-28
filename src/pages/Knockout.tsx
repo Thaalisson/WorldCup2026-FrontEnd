@@ -1,5 +1,13 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { apiGet } from '../services/api';
+
+interface MatchDto {
+  homeTeam: { name: string; code: string; isoCode?: string | null };
+  awayTeam: { name: string; code: string; isoCode?: string | null };
+  kickoffAt: string;
+  stage: string;
+}
 
 const UNIT = 80; // slot height (H) + gap (G)
 const H = 72;    // match slot height (2 team rows)
@@ -284,6 +292,43 @@ function HalfBracket({
 export function Knockout() {
   const { t } = useTranslation();
   const [bracket, setBracket] = useState<BracketState>(initBracket);
+  const [teamsLoaded, setTeamsLoaded] = useState(false);
+
+  useEffect(() => {
+    apiGet<MatchDto[]>('/matches').then(all => {
+      const r32 = all
+        .filter(m => m.stage === 'Rodada de 32')
+        .sort((a, b) => new Date(a.kickoffAt).getTime() - new Date(b.kickoffAt).getTime());
+
+      if (r32.length < 8) return;
+
+      const toTeam = (t: MatchDto['homeTeam'], fallback: Team): Team => {
+        if (!t.code || !t.name) return fallback;
+        return { label: t.code, name: t.name, isoCode: t.isoCode ?? undefined };
+      };
+
+      const left8 = r32.slice(0, 8);
+      const right8 = r32.slice(8, 16);
+
+      const newL32: BMatch[] = left8.map((m, i) => ({
+        id: `l32-${i}`,
+        home: toTeam(m.homeTeam, L32[i]?.home ?? { label: '—' }),
+        away: toTeam(m.awayTeam, L32[i]?.away ?? { label: '—' }),
+      }));
+      const newR32: BMatch[] = right8.map((m, i) => ({
+        id: `r32-${i}`,
+        home: toTeam(m.homeTeam, R32[i]?.home ?? { label: '—' }),
+        away: toTeam(m.awayTeam, R32[i]?.away ?? { label: '—' }),
+      }));
+
+      setBracket(prev => ({
+        ...prev,
+        left: [newL32, prev.left[1], prev.left[2], prev.left[3]] as HalfState,
+        right: [newR32, prev.right[1], prev.right[2], prev.right[3]] as HalfState,
+      }));
+      setTeamsLoaded(true);
+    }).catch(() => {});
+  }, []);
 
   function handleAdvance(side: 'left' | 'right', roundIdx: number, matchIdx: number, winner: 'home' | 'away') {
     setBracket(prev => advanceTeam(prev, side, roundIdx, matchIdx, winner));
@@ -322,21 +367,23 @@ export function Knockout() {
         </button>
       </div>
 
-      {/* Info banner */}
-      <div style={{
-        background: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: 10,
-        padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 10,
-      }}>
-        <span style={{ fontSize: 16 }}>⏳</span>
-        <div>
-          <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: '#92400E' }}>
-            {t('knockout.tbdTitle')}
-          </p>
-          <p style={{ margin: 0, fontSize: 11, color: '#B45309' }}>
-            {t('knockout.tbdDesc')}
-          </p>
+      {/* Info banner — shown only while teams are still TBD */}
+      {!teamsLoaded && (
+        <div style={{
+          background: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: 10,
+          padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 10,
+        }}>
+          <span style={{ fontSize: 16 }}>⏳</span>
+          <div>
+            <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: '#92400E' }}>
+              {t('knockout.tbdTitle')}
+            </p>
+            <p style={{ margin: 0, fontSize: 11, color: '#B45309' }}>
+              {t('knockout.tbdDesc')}
+            </p>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Bracket */}
       <div style={{ overflowX: 'auto', overflowY: 'visible', paddingBottom: 16 }}>
