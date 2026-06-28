@@ -60,6 +60,53 @@ function initBracket(l32 = L32_INIT, r32 = R32_INIT): BracketState {
   return { left: buildHalf(l32), right: buildHalf(r32), final: emptyMatch('final'), third: emptyMatch('third') };
 }
 
+// ── localStorage persistence ───────────────────────────────────
+const PICKS_KEY = 'bolao_knockout_picks_v1';
+
+type Picks = {
+  l: (('home' | 'away') | null)[][];
+  r: (('home' | 'away') | null)[][];
+  f: ('home' | 'away') | null;
+  t: ('home' | 'away') | null;
+};
+
+function extractPicks(b: BracketState): Picks {
+  return {
+    l: b.left.map(round  => round.map(m => m.winner ?? null)),
+    r: b.right.map(round => round.map(m => m.winner ?? null)),
+    f: b.final.winner ?? null,
+    t: b.third.winner ?? null,
+  };
+}
+
+function applyPicks(bracket: BracketState, picks: Picks): BracketState {
+  let b = bracket;
+  for (let ri = 0; ri < 4; ri++) {
+    for (let mi = 0; mi < (picks.l[ri]?.length ?? 0); mi++) {
+      const w = picks.l[ri][mi];
+      if (w) b = advanceTeam(b, 'left', ri, mi, w);
+    }
+    for (let mi = 0; mi < (picks.r[ri]?.length ?? 0); mi++) {
+      const w = picks.r[ri][mi];
+      if (w) b = advanceTeam(b, 'right', ri, mi, w);
+    }
+  }
+  if (picks.f) b = { ...b, final: { ...b.final, winner: picks.f } };
+  if (picks.t) b = { ...b, third: { ...b.third, winner: picks.t } };
+  return b;
+}
+
+function savePicks(b: BracketState) {
+  try { localStorage.setItem(PICKS_KEY, JSON.stringify(extractPicks(b))); } catch { /* quota */ }
+}
+
+function loadPicks(): Picks | null {
+  try {
+    const raw = localStorage.getItem(PICKS_KEY);
+    return raw ? JSON.parse(raw) as Picks : null;
+  } catch { return null; }
+}
+
 function advanceTeam(
   state: BracketState, side: 'left' | 'right', roundIdx: number, matchIdx: number, winner: 'home' | 'away',
 ): BracketState {
@@ -482,12 +529,20 @@ export function Knockout() {
 
         const fresh = initBracket(newL32, newR32);
         resetBase.current = fresh;
-        setBracket(fresh);
+
+        // Restore saved picks on top of fresh real-team bracket
+        const saved = loadPicks();
+        setBracket(saved ? applyPicks(fresh, saved) : fresh);
         setTeamsLoaded(true);
       })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
+
+  // Auto-save picks whenever bracket changes (only after real teams are loaded)
+  useEffect(() => {
+    if (teamsLoaded) savePicks(bracket);
+  }, [bracket, teamsLoaded]);
 
   function handleAdvance(side: 'left' | 'right', ri: number, mi: number, w: 'home' | 'away') {
     setBracket(prev => advanceTeam(prev, side, ri, mi, w));
@@ -498,7 +553,10 @@ export function Knockout() {
   function handleThird(w: 'home' | 'away') {
     setBracket(prev => ({ ...prev, third: { ...prev.third, winner: w } }));
   }
-  function handleReset() { setBracket(resetBase.current ?? initBracket()); }
+  function handleReset() {
+    localStorage.removeItem(PICKS_KEY);
+    setBracket(resetBase.current ?? initBracket());
+  }
 
   const DESK_LABELS: RoundLabel[] = [
     { text: t('knockout.r32'), color: '#6366F1' }, { text: t('knockout.r16'), color: '#8B5CF6' },
