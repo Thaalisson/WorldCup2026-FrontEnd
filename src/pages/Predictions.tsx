@@ -9,6 +9,13 @@ import { Save, CheckCircle, AlertCircle, Calendar, Zap, Copy } from 'lucide-reac
 type Props = { poolId: string; totalPools?: number };
 type ScoreEntry = { home: number; away: number };
 type DateFilter = 'all' | 'today' | 'week';
+type PhaseFilter = 'all' | 'groups' | 'knockout';
+
+const KNOCKOUT_STAGES = ['Rodada de 32', 'Oitavas de final', 'Quartas de final', 'Semifinal', 'Disputa de 3º lugar', 'Final'];
+const STAGE_ORDER: Record<string, number> = {
+  'Rodada de 32': 1, 'Oitavas de final': 2, 'Quartas de final': 3,
+  'Semifinal': 4, 'Disputa de 3º lugar': 5, 'Final': 6,
+};
 
 function isBrazilToday(isoString: string): boolean {
   const now = new Date();
@@ -37,6 +44,7 @@ export function Predictions({ poolId, totalPools = 1 }: Props) {
   const [error, setError] = useState('');
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
   const [dateFilter, setDateFilter] = useState<DateFilter>('all');
+  const [phaseFilter, setPhaseFilter] = useState<PhaseFilter>('all');
   const saveMsgTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const debounceTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
   // Espelho dos scores sempre atualizado — o autosave lê daqui (nunca de um snapshot velho).
@@ -154,9 +162,11 @@ export function Predictions({ poolId, totalPools = 1 }: Props) {
 
   const applyFilters = (list: Match[]) => {
     let result = list;
+    if (phaseFilter === 'groups') result = result.filter(m => !!m.groupName);
+    else if (phaseFilter === 'knockout') result = result.filter(m => !m.groupName);
     if (dateFilter === 'today') result = result.filter(m => isBrazilToday(m.kickoffAt));
     else if (dateFilter === 'week') result = result.filter(m => isBrazilThisWeek(m.kickoffAt));
-    if (selectedGroup) result = result.filter(m => m.groupName === selectedGroup);
+    if (selectedGroup && phaseFilter !== 'knockout') result = result.filter(m => m.groupName === selectedGroup);
     return result;
   };
 
@@ -167,7 +177,7 @@ export function Predictions({ poolId, totalPools = 1 }: Props) {
   const savedCount = upcoming.filter(m => savedIds.has(m.id) && !dirtyIds.has(m.id)).length;
   const dirtyCount = dirtyIds.size;
 
-  // Agrupar próximos jogos (abertos) por data
+  // Próximos jogos — grupo por data (fase de grupos) ou por rodada+data (mata-mata)
   const upcomingByDate: [string, Match[]][] = [];
   const dateMap: Record<string, Match[]> = {};
   upcomingFiltered.forEach(m => {
@@ -180,6 +190,29 @@ export function Predictions({ poolId, totalPools = 1 }: Props) {
       upcomingByDate.push([date, dateMap[date]]);
     }
   });
+
+  // Para mata-mata: agrupar por rodada → dentro de cada rodada, por data
+  const upcomingByStage: [string, [string, Match[]][]][] = [];
+  if (phaseFilter === 'knockout') {
+    const stageMap: Record<string, Record<string, Match[]>> = {};
+    upcomingFiltered.forEach(m => {
+      const stage = m.stage ?? 'Desconhecido';
+      const date = formatBrazilDate(m.kickoffAt);
+      if (!stageMap[stage]) stageMap[stage] = {};
+      (stageMap[stage][date] ??= []).push(m);
+    });
+    Object.keys(stageMap)
+      .sort((a, b) => (STAGE_ORDER[a] ?? 99) - (STAGE_ORDER[b] ?? 99))
+      .forEach(stage => {
+        const byDate: [string, Match[]][] = [];
+        const seenDates = new Set<string>();
+        upcomingFiltered.filter(m => m.stage === stage).forEach(m => {
+          const date = formatBrazilDate(m.kickoffAt);
+          if (!seenDates.has(date)) { seenDates.add(date); byDate.push([date, stageMap[stage][date]]); }
+        });
+        upcomingByStage.push([stage, byDate]);
+      });
+  }
 
   const awaitingFiltered = applyFilters(awaitingResult);
 
@@ -279,34 +312,58 @@ export function Predictions({ poolId, totalPools = 1 }: Props) {
         </div>
       </div>
 
-      {/* ── Filtros de data + grupo ── */}
+      {/* ── Filtros de fase + data + grupo ── */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {/* Date filter */}
-        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+        {/* Phase filter */}
+        <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
           {([
-            { id: 'all',   label: t('predictions.filterAll'),   icon: null },
-            { id: 'today', label: t('predictions.filterToday'), icon: <Zap size={10} /> },
-            { id: 'week',  label: t('predictions.filterWeek'),  icon: <Calendar size={10} /> },
-          ] as { id: DateFilter; label: string; icon: React.ReactNode }[]).map(f => (
+            { id: 'all',      label: t('predictions.filterAll') },
+            { id: 'groups',   label: t('predictions.filterGroups') },
+            { id: 'knockout', label: t('predictions.filterKnockout') },
+          ] as { id: PhaseFilter; label: string }[]).map(f => (
             <button
               key={f.id}
-              onClick={() => setDateFilter(f.id)}
+              onClick={() => { setPhaseFilter(f.id); if (f.id === 'knockout') setSelectedGroup(null); }}
               style={{
-                display: 'flex', alignItems: 'center', gap: 4,
-                padding: '5px 12px', borderRadius: 20, fontSize: 11, fontWeight: 700, cursor: 'pointer',
-                border: dateFilter === f.id ? 'none' : '1px solid #E5E7EB',
-                background: dateFilter === f.id ? '#111827' : '#fff',
-                color: dateFilter === f.id ? '#fff' : '#6B7280',
+                padding: '5px 14px', borderRadius: 20, fontSize: 11, fontWeight: 800, cursor: 'pointer',
+                border: phaseFilter === f.id ? 'none' : '1px solid #E5E7EB',
+                background: phaseFilter === f.id ? (f.id === 'knockout' ? '#7C3AED' : '#111827') : '#fff',
+                color: phaseFilter === f.id ? '#fff' : '#6B7280',
                 transition: 'all 0.15s',
               }}
             >
-              {f.icon}{f.label}
+              {f.label}
             </button>
           ))}
+          {/* Date sub-filter (só aparece quando não é mata-mata puro) */}
+          {phaseFilter !== 'knockout' && (
+            <div style={{ display: 'flex', gap: 4, marginLeft: 4 }}>
+              {([
+                { id: 'all',   label: t('predictions.filterAll'),   icon: null },
+                { id: 'today', label: t('predictions.filterToday'), icon: <Zap size={10} /> },
+                { id: 'week',  label: t('predictions.filterWeek'),  icon: <Calendar size={10} /> },
+              ] as { id: DateFilter; label: string; icon: React.ReactNode }[]).map(f => (
+                <button
+                  key={f.id}
+                  onClick={() => setDateFilter(f.id)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 4,
+                    padding: '5px 10px', borderRadius: 20, fontSize: 11, fontWeight: 700, cursor: 'pointer',
+                    border: dateFilter === f.id ? 'none' : '1px solid #E5E7EB',
+                    background: dateFilter === f.id ? '#374151' : '#F9FAFB',
+                    color: dateFilter === f.id ? '#fff' : '#9CA3AF',
+                    transition: 'all 0.15s',
+                  }}
+                >
+                  {f.icon}{f.label}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
-        {/* Group filter */}
-        {groups.length > 0 && (
+        {/* Group filter — só aparece na fase de grupos */}
+        {groups.length > 0 && phaseFilter !== 'knockout' && (
           <div className="chips-scroll">
             <span style={{ fontSize: 10, fontWeight: 700, color: '#9CA3AF', letterSpacing: '0.1em', textTransform: 'uppercase', marginRight: 2, flexShrink: 0 }}>{t('predictions.groupLabel')}</span>
             <button
@@ -338,8 +395,52 @@ export function Predictions({ poolId, totalPools = 1 }: Props) {
         )}
       </div>
 
-      {/* ── Próximos jogos agrupados por data ── */}
-      {upcomingByDate.length > 0 && upcomingByDate.map(([date, dateMatches]) => (
+      {/* ── Próximos jogos — mata-mata: agrupado por rodada ── */}
+      {phaseFilter === 'knockout' && upcomingByStage.length > 0 && upcomingByStage.map(([stage, dateGroups]) => (
+        <section key={stage}>
+          {/* Cabeçalho de rodada */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+            <div style={{
+              display: 'inline-flex', alignItems: 'center', gap: 6,
+              padding: '4px 14px', borderRadius: 20, fontSize: 11, fontWeight: 900,
+              letterSpacing: '0.1em', textTransform: 'uppercase',
+              background: '#7C3AED15', color: '#7C3AED', border: '1.5px solid #7C3AED30',
+            }}>
+              {stage}
+            </div>
+            <div style={{ flex: 1, height: 1, background: '#7C3AED20' }} />
+            <span style={{ fontSize: 10, color: '#9CA3AF' }}>
+              {dateGroups.reduce((s, [, ms]) => s + ms.length, 0)} jogos
+            </span>
+          </div>
+          {/* Por data dentro da rodada */}
+          {dateGroups.map(([date, dateMatches]) => (
+            <div key={date} style={{ marginBottom: 20 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                <p className="section-label" style={{ margin: 0, fontSize: 11 }}>{date}</p>
+                <div style={{ flex: 1, height: 1, background: '#F3F4F6' }} />
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 12 }}>
+                {dateMatches.map(m => (
+                  <MatchCard
+                    key={m.id}
+                    match={m}
+                    home={scores[m.id]?.home ?? 0}
+                    away={scores[m.id]?.away ?? 0}
+                    isSaved={savedIds.has(m.id)}
+                    isDirty={dirtyIds.has(m.id)}
+                    onChange={(h, a) => handleChange(m.id, h, a)}
+                    onBlur={() => saveSingle(m.id)}
+                  />
+                ))}
+              </div>
+            </div>
+          ))}
+        </section>
+      ))}
+
+      {/* ── Próximos jogos — fase de grupos: agrupado por data ── */}
+      {phaseFilter !== 'knockout' && upcomingByDate.length > 0 && upcomingByDate.map(([date, dateMatches]) => (
         <section key={date}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
             <p className="section-label" style={{ margin: 0 }}>{date}</p>
@@ -363,9 +464,11 @@ export function Predictions({ poolId, totalPools = 1 }: Props) {
         </section>
       ))}
 
-      {upcomingFiltered.length === 0 && selectedGroup && upcoming.length > 0 && (
+      {upcomingFiltered.length === 0 && (selectedGroup || phaseFilter !== 'all') && upcoming.length > 0 && (
         <div style={{ textAlign: 'center', padding: '32px 0', color: '#9CA3AF', fontSize: 13 }}>
-          {t('predictions.noMatchesForGroup', { group: selectedGroup })}
+          {selectedGroup
+            ? t('predictions.noMatchesForGroup', { group: selectedGroup })
+            : t('predictions.noMatchesForPhase')}
         </div>
       )}
 
