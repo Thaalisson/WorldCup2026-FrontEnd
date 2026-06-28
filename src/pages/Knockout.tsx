@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { apiGet } from '../services/api';
 
@@ -9,22 +9,25 @@ interface MatchDto {
   stage: string;
 }
 
-const UNIT = 80; // slot height (H) + gap (G)
-const H = 72;    // match slot height (2 team rows)
-const COL_W = 156;
-const CONN_W = 28;
-const CONTAINER_H = 8 * UNIT - (UNIT - H); // 632px
+// ── Layout constants ──────────────────────────────────────────
+const H      = 84;   // match card height
+const UNIT   = 96;   // vertical slot (H + gap)
+const COL_W  = 180;  // card width
+const CONN_W = 32;   // SVG connector width
+const CONTAINER_H = 8 * UNIT - (UNIT - H);
 
-type Team = { label: string; name?: string; isoCode?: string };
-type BMatch = { id: string; home: Team; away: Team; winner?: 'home' | 'away' };
-
-// Vertical center of match[round][idx] within the container
-function getCenter(round: number, idx: number): number {
+function getCenter(round: number, idx: number) {
   return (Math.pow(2, round) * idx + (Math.pow(2, round) - 1) / 2) * UNIT + H / 2;
 }
-function getTop(round: number, idx: number): number {
+function getTop(round: number, idx: number) {
   return getCenter(round, idx) - H / 2;
 }
+
+// ── Types ────────────────────────────────────────────────────
+type Team   = { label: string; name?: string; isoCode?: string };
+type BMatch = { id: string; home: Team; away: Team; winner?: 'home' | 'away' };
+type HalfState = [BMatch[], BMatch[], BMatch[], BMatch[]];
+type BracketState = { left: HalfState; right: HalfState; final: BMatch; third: BMatch };
 
 function makeMatch(id: string, h: string, a: string): BMatch {
   return { id, home: { label: h }, away: { label: a } };
@@ -33,7 +36,8 @@ function emptyMatch(id: string): BMatch {
   return { id, home: { label: '—' }, away: { label: '—' } };
 }
 
-const L32: BMatch[] = [
+// Hardcoded bracket slots — used as fallback
+const L32_INIT: BMatch[] = [
   makeMatch('l32-0', '1°A', 'Mel. 3° D/E/F'),
   makeMatch('l32-1', '1°C', 'Mel. 3° A/D/F'),
   makeMatch('l32-2', '2°B', '2°C'),
@@ -43,8 +47,7 @@ const L32: BMatch[] = [
   makeMatch('l32-6', '1°E', 'Mel. 3° A/B/C'),
   makeMatch('l32-7', '1°F', '2°F'),
 ];
-
-const R32: BMatch[] = [
+const R32_INIT: BMatch[] = [
   makeMatch('r32-0', '1°G', 'Mel. 3° H/I/J'),
   makeMatch('r32-1', '2°H', '2°I'),
   makeMatch('r32-2', '1°H', 'Mel. 3° G/J/K'),
@@ -55,28 +58,19 @@ const R32: BMatch[] = [
   makeMatch('r32-7', '1°L', '2°L'),
 ];
 
-type HalfState = [BMatch[], BMatch[], BMatch[], BMatch[]]; // [R32(8), R16(4), QF(2), SF(1)]
-
-function initHalf(r32: BMatch[]): HalfState {
+function buildEmptyHalf(r32: BMatch[]): HalfState {
   return [
     r32,
-    [emptyMatch('h16-0'), emptyMatch('h16-1'), emptyMatch('h16-2'), emptyMatch('h16-3')],
-    [emptyMatch('hqf-0'), emptyMatch('hqf-1')],
-    [emptyMatch('hsf-0')],
+    Array.from({ length: 4 }, (_, i) => emptyMatch(`r16-${i}`)),
+    Array.from({ length: 2 }, (_, i) => emptyMatch(`qf-${i}`)),
+    [emptyMatch('sf-0')],
   ];
 }
 
-type BracketState = {
-  left: HalfState;
-  right: HalfState;
-  final: BMatch;
-  third: BMatch;
-};
-
-function initBracket(): BracketState {
+function initBracket(l32 = L32_INIT, r32 = R32_INIT): BracketState {
   return {
-    left: initHalf(L32),
-    right: initHalf(R32),
+    left:  buildEmptyHalf(l32),
+    right: buildEmptyHalf(r32),
     final: emptyMatch('final'),
     third: emptyMatch('third'),
   };
@@ -95,195 +89,206 @@ function advanceTeam(
   half[roundIdx][matchIdx] = { ...match, winner };
 
   if (roundIdx < 3) {
-    const nextMatchIdx = Math.floor(matchIdx / 2);
+    const nextMatch = Math.floor(matchIdx / 2);
     const slot = matchIdx % 2 === 0 ? 'home' : 'away';
-    half[roundIdx + 1][nextMatchIdx] = {
-      ...half[roundIdx + 1][nextMatchIdx],
-      [slot]: team,
-    };
+    half[roundIdx + 1][nextMatch] = { ...half[roundIdx + 1][nextMatch], [slot]: team };
     return { ...state, [side]: half };
-  } else {
-    // SF winner → final
-    const slot = side === 'left' ? 'home' : 'away';
-    return {
-      ...state,
-      [side]: half,
-      final: { ...state.final, [slot]: team },
-    };
   }
+  const slot = side === 'left' ? 'home' : 'away';
+  return { ...state, [side]: half, final: { ...state.final, [slot]: team } };
 }
 
-// ── Team row button ──────────────────────────────────────────
+// ── Flag component ───────────────────────────────────────────
+function Flag({ isoCode, size = 28 }: { isoCode?: string; size?: number }) {
+  if (isoCode) {
+    return (
+      <img
+        src={`https://flagcdn.com/w40/${isoCode.toLowerCase()}.png`}
+        width={size} height={Math.round(size * 0.67)}
+        style={{ borderRadius: 3, objectFit: 'cover', flexShrink: 0, boxShadow: '0 1px 4px rgba(0,0,0,0.18)' }}
+      />
+    );
+  }
+  return (
+    <div style={{
+      width: size, height: Math.round(size * 0.67), borderRadius: 3, flexShrink: 0,
+      background: '#F1F5F9', border: '1px dashed #CBD5E1',
+    }} />
+  );
+}
+
+// ── Team row ─────────────────────────────────────────────────
 function TeamRow({
   team, isWinner, isLoser, canClick, onClick,
 }: {
   team: Team; isWinner?: boolean; isLoser?: boolean; canClick: boolean; onClick: () => void;
 }) {
-  const { t } = useTranslation();
-  const hasReal = !!team.name;
-  const isPlaceholder = team.label === '—';
-  const bg = isWinner ? '#F0FDF4' : isLoser ? '#F9FAFB' : 'transparent';
+  const hasReal    = !!team.name;
+  const isBlank    = team.label === '—';
+  const bg         = isWinner ? '#F0FDF4' : 'transparent';
+  const leftBorder = isWinner ? '3px solid #16A34A' : '3px solid transparent';
 
   return (
     <button
       onClick={canClick ? onClick : undefined}
-      title={canClick ? t('knockout.advanceTitle', { team: team.name || team.label }) : undefined}
       style={{
-        display: 'flex', alignItems: 'center', gap: 6,
-        padding: '7px 10px', width: '100%',
-        background: bg, border: 'none',
+        display: 'flex', alignItems: 'center', gap: 9,
+        padding: '10px 12px 10px 9px', width: '100%',
+        background: bg, border: 'none', borderLeft: leftBorder,
         cursor: canClick ? 'pointer' : 'default',
-        textAlign: 'left', transition: 'background 0.12s',
-        opacity: isLoser ? 0.45 : 1,
+        textAlign: 'left', opacity: isLoser ? 0.35 : 1,
+        transition: 'background 0.1s, opacity 0.1s',
       }}
-      onMouseEnter={e => { if (canClick) (e.currentTarget as HTMLButtonElement).style.background = isWinner ? '#DCFCE7' : '#FFF7ED'; }}
-      onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = bg; }}
+      onMouseEnter={e => {
+        if (!canClick) return;
+        (e.currentTarget as HTMLButtonElement).style.background = isWinner ? '#DCFCE7' : '#FFF7ED';
+      }}
+      onMouseLeave={e => {
+        (e.currentTarget as HTMLButtonElement).style.background = bg;
+      }}
     >
-      {team.isoCode ? (
-        <img
-          src={`https://flagcdn.com/w40/${team.isoCode.toLowerCase()}.png`}
-          width={20} height={14}
-          style={{ borderRadius: 2, objectFit: 'cover', flexShrink: 0 }}
-        />
-      ) : (
+      <Flag isoCode={team.isoCode} size={26} />
+
+      <div style={{ flex: 1, overflow: 'hidden', minWidth: 0 }}>
         <div style={{
-          width: 20, height: 14, borderRadius: 2, flexShrink: 0,
-          background: isPlaceholder ? '#F3F4F6' : '#FEF3C7',
-          border: `1px dashed ${isPlaceholder ? '#E5E7EB' : '#FBBF24'}`,
-        }} />
+          fontSize: hasReal ? 12 : 11,
+          fontWeight: hasReal ? 800 : 500,
+          color: isBlank ? '#CBD5E1' : hasReal ? '#0F172A' : '#64748B',
+          whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+          lineHeight: 1.2,
+        }}>
+          {hasReal ? team.name : team.label}
+        </div>
+        {hasReal && (
+          <div style={{ fontSize: 10, color: '#94A3B8', lineHeight: 1, marginTop: 2, fontWeight: 600 }}>
+            {team.label}
+          </div>
+        )}
+      </div>
+
+      {isWinner && (
+        <div style={{
+          width: 18, height: 18, borderRadius: '50%', flexShrink: 0,
+          background: '#16A34A', display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <span style={{ color: '#fff', fontSize: 10, fontWeight: 900, lineHeight: 1 }}>✓</span>
+        </div>
       )}
-      <span style={{
-        fontSize: 10, fontWeight: hasReal ? 700 : 500,
-        color: isPlaceholder ? '#D1D5DB' : hasReal ? '#111827' : '#9CA3AF',
-        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-        flex: 1, maxWidth: 108,
-      }}>
-        {team.name || team.label}
-      </span>
-      {isWinner && <span style={{ fontSize: 9, color: '#16A34A', fontWeight: 900, marginLeft: 'auto' }}>✓</span>}
     </button>
   );
 }
 
-// ── Single match card ────────────────────────────────────────
+// ── Match card ───────────────────────────────────────────────
 function MatchSlot({ match, onAdvance }: { match: BMatch; onAdvance: (w: 'home' | 'away') => void }) {
-  const bothDefined = match.home.label !== '—' && match.away.label !== '—';
-  const alreadyWon = !!match.winner;
-  const canClick = bothDefined && !alreadyWon;
+  const canAdvance = match.home.label !== '—' && match.away.label !== '—' && !match.winner;
+  const won = !!match.winner;
 
   return (
     <div style={{
-      width: COL_W, border: `1px solid ${match.winner ? '#D1FAE5' : '#E5E7EB'}`,
-      borderRadius: 8, overflow: 'hidden', background: '#fff',
-      boxShadow: match.winner ? '0 0 0 2px #D1FAE520' : 'none',
-      transition: 'border-color 0.2s',
+      width: COL_W,
+      border: `1px solid ${won ? '#BBF7D0' : '#E2E8F0'}`,
+      borderRadius: 10, overflow: 'hidden', background: '#fff',
+      boxShadow: won
+        ? '0 2px 10px rgba(22,163,74,0.14)'
+        : '0 1px 5px rgba(15,23,42,0.07)',
     }}>
-      <TeamRow team={match.home} isWinner={match.winner === 'home'} isLoser={match.winner === 'away'} canClick={canClick} onClick={() => onAdvance('home')} />
-      <div style={{ height: 1, background: '#F3F4F6' }} />
-      <TeamRow team={match.away} isWinner={match.winner === 'away'} isLoser={match.winner === 'home'} canClick={canClick} onClick={() => onAdvance('away')} />
+      <TeamRow
+        team={match.home}
+        isWinner={match.winner === 'home'} isLoser={match.winner === 'away'}
+        canClick={canAdvance} onClick={() => onAdvance('home')}
+      />
+      <div style={{ height: 1, background: '#F1F5F9' }} />
+      <TeamRow
+        team={match.away}
+        isWinner={match.winner === 'away'} isLoser={match.winner === 'home'}
+        canClick={canAdvance} onClick={() => onAdvance('away')}
+      />
     </div>
   );
 }
 
-// ── SVG connector between columns ────────────────────────────
-function Connector({ fromRound, count, direction }: { fromRound: number; count: number; direction: 'left' | 'right' }) {
-  const lines: React.ReactNode[] = [];
-  for (let i = 0; i < count; i++) {
-    const c0 = getCenter(fromRound, i * 2);
-    const c1 = getCenter(fromRound, i * 2 + 1);
-    const mid = (c0 + c1) / 2;
-    const midX = CONN_W / 2;
-
-    if (direction === 'left') {
-      // Left bracket: match output goes right → connector → next round input from left
-      lines.push(
-        <g key={i}>
-          <line x1={0} y1={c0} x2={midX} y2={c0} stroke="#E5E7EB" strokeWidth={1.5} />
-          <line x1={0} y1={c1} x2={midX} y2={c1} stroke="#E5E7EB" strokeWidth={1.5} />
-          <line x1={midX} y1={c0} x2={midX} y2={c1} stroke="#E5E7EB" strokeWidth={1.5} />
-          <line x1={midX} y1={mid} x2={CONN_W} y2={mid} stroke="#E5E7EB" strokeWidth={1.5} />
-        </g>
-      );
-    } else {
-      // Right bracket: mirrored
-      lines.push(
-        <g key={i}>
-          <line x1={CONN_W} y1={c0} x2={midX} y2={c0} stroke="#E5E7EB" strokeWidth={1.5} />
-          <line x1={CONN_W} y1={c1} x2={midX} y2={c1} stroke="#E5E7EB" strokeWidth={1.5} />
-          <line x1={midX} y1={c0} x2={midX} y2={c1} stroke="#E5E7EB" strokeWidth={1.5} />
-          <line x1={midX} y1={mid} x2={0} y2={mid} stroke="#E5E7EB" strokeWidth={1.5} />
-        </g>
-      );
-    }
-  }
+// ── SVG Connector ────────────────────────────────────────────
+function Connector({ fromRound, count, dir }: { fromRound: number; count: number; dir: 'left' | 'right' }) {
   return (
     <svg width={CONN_W} height={CONTAINER_H} style={{ flexShrink: 0, overflow: 'visible' }}>
-      {lines}
+      {Array.from({ length: count }, (_, i) => {
+        const c0 = getCenter(fromRound, i * 2);
+        const c1 = getCenter(fromRound, i * 2 + 1);
+        const mid = (c0 + c1) / 2;
+        const mx = CONN_W / 2;
+        const x0 = dir === 'left' ? 0 : CONN_W;
+        const x1 = dir === 'left' ? CONN_W : 0;
+        return (
+          <g key={i} stroke="#CBD5E1" strokeWidth={1.5} fill="none">
+            <line x1={x0} y1={c0} x2={mx} y2={c0} />
+            <line x1={x0} y1={c1} x2={mx} y2={c1} />
+            <line x1={mx} y1={c0} x2={mx} y2={c1} />
+            <line x1={mx} y1={mid} x2={x1} y2={mid} />
+          </g>
+        );
+      })}
     </svg>
   );
 }
 
-// ── Half bracket (4 rounds) ──────────────────────────────────
+// ── Round pill label ─────────────────────────────────────────
+function RoundPill({ text, color }: { text: string; color: string }) {
+  return (
+    <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 14 }}>
+      <span style={{
+        fontSize: 9, fontWeight: 800, letterSpacing: '0.1em',
+        color, textTransform: 'uppercase',
+        background: `${color}18`, padding: '4px 12px',
+        borderRadius: 20, border: `1px solid ${color}35`,
+        whiteSpace: 'nowrap',
+      }}>
+        {text}
+      </span>
+    </div>
+  );
+}
+
+// ── Half bracket ─────────────────────────────────────────────
+type RoundLabel = { text: string; color: string };
+
 function HalfBracket({
-  half, side, roundNames, onAdvance,
+  half, side, labels, onAdvance,
 }: {
   half: HalfState;
   side: 'left' | 'right';
-  roundNames: string[];
-  onAdvance: (roundIdx: number, matchIdx: number, w: 'home' | 'away') => void;
+  labels: RoundLabel[];
+  onAdvance: (ri: number, mi: number, w: 'home' | 'away') => void;
 }) {
-  const rounds = side === 'left' ? half : [...half].reverse();
-  const roundNamesOrdered = side === 'left' ? roundNames : [...roundNames].reverse();
-  const actualRoundIdx = (displayIdx: number) => side === 'left' ? displayIdx : 3 - displayIdx;
+  const rounds  = side === 'left' ? half : [...half].reverse();
+  const ordered = side === 'left' ? labels : [...labels].reverse();
+  const ri      = (di: number) => side === 'left' ? di : 3 - di;
 
   return (
     <div style={{ display: 'flex', alignItems: 'flex-start', flexShrink: 0 }}>
-      {rounds.map((matches, displayIdx) => {
-        const ri = actualRoundIdx(displayIdx);
-        const roundMatches = matches.length === 8 ? matches :
-          side === 'left' ? matches : matches; // already in correct order
+      {rounds.map((matches, di) => (
+        <div key={di} style={{ display: 'flex', alignItems: 'flex-start' }}>
+          {di > 0 && side === 'left' && <Connector fromRound={ri(di) - 1} count={rounds[di - 1].length} dir="left" />}
+          {di > 0 && side === 'right' && <Connector fromRound={ri(di)} count={matches.length} dir="right" />}
 
-        return (
-          <div key={displayIdx} style={{ display: 'flex', alignItems: 'flex-start' }}>
-            {/* Connector before this round (not before the first) */}
-            {displayIdx > 0 && side === 'left' && (
-              <Connector fromRound={ri - 1} count={rounds[displayIdx - 1].length} direction="left" />
-            )}
-            {displayIdx > 0 && side === 'right' && (
-              <Connector fromRound={ri} count={matches.length} direction="right" />
-            )}
+          <div style={{ display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
+            <RoundPill text={ordered[di].text} color={ordered[di].color} />
 
-            <div style={{ display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
-              {/* Round label */}
-              <p style={{
-                fontSize: 9, fontWeight: 800, letterSpacing: '0.12em', color: '#9CA3AF',
-                textAlign: 'center', margin: '0 0 10px', textTransform: 'uppercase',
-                whiteSpace: 'nowrap',
-              }}>
-                {roundNamesOrdered[displayIdx]}
-              </p>
-
-              {/* Matches container (absolute positioning) */}
-              <div style={{ position: 'relative', height: CONTAINER_H, width: COL_W }}>
-                {(side === 'left' ? roundMatches : [...roundMatches].reverse()).map((match, displayMatchIdx) => {
-                  const mi = side === 'left' ? displayMatchIdx : roundMatches.length - 1 - displayMatchIdx;
-                  return (
-                    <div
-                      key={match.id}
-                      style={{ position: 'absolute', top: getTop(ri, displayMatchIdx), left: 0 }}
-                    >
-                      <MatchSlot
-                        match={side === 'left' ? match : roundMatches[mi]}
-                        onAdvance={w => onAdvance(ri, mi, w)}
-                      />
-                    </div>
-                  );
-                })}
-              </div>
+            <div style={{ position: 'relative', height: CONTAINER_H, width: COL_W }}>
+              {(side === 'left' ? matches : [...matches].reverse()).map((match, dmi) => {
+                const mi = side === 'left' ? dmi : matches.length - 1 - dmi;
+                return (
+                  <div key={match.id} style={{ position: 'absolute', top: getTop(ri(di), dmi) }}>
+                    <MatchSlot
+                      match={side === 'left' ? match : matches[mi]}
+                      onAdvance={w => onAdvance(ri(di), mi, w)}
+                    />
+                  </div>
+                );
+              })}
             </div>
           </div>
-        );
-      })}
+        </div>
+      ))}
     </div>
   );
 }
@@ -291,58 +296,65 @@ function HalfBracket({
 // ── Main component ────────────────────────────────────────────
 export function Knockout() {
   const { t } = useTranslation();
-  const [bracket, setBracket] = useState<BracketState>(initBracket);
+  const [bracket, setBracket]         = useState<BracketState>(() => initBracket());
   const [teamsLoaded, setTeamsLoaded] = useState(false);
+  const [loading, setLoading]         = useState(true);
+  const resetBase = useRef<BracketState | null>(null);
 
   useEffect(() => {
-    apiGet<MatchDto[]>('/matches').then(all => {
-      const r32 = all
-        .filter(m => m.stage === 'Rodada de 32')
-        .sort((a, b) => new Date(a.kickoffAt).getTime() - new Date(b.kickoffAt).getTime());
+    apiGet<MatchDto[]>('/matches')
+      .then(all => {
+        const r32 = all
+          .filter(m => m.stage === 'Rodada de 32')
+          .sort((a, b) => new Date(a.kickoffAt).getTime() - new Date(b.kickoffAt).getTime());
 
-      if (r32.length < 8) return;
+        if (r32.length < 8) return;
 
-      const toTeam = (t: MatchDto['homeTeam'], fallback: Team): Team => {
-        if (!t.code || !t.name) return fallback;
-        return { label: t.code, name: t.name, isoCode: t.isoCode ?? undefined };
-      };
+        const toTeam = (tm: MatchDto['homeTeam'], fallback: Team): Team =>
+          tm.code && tm.name
+            ? { label: tm.code, name: tm.name, isoCode: tm.isoCode ?? undefined }
+            : fallback;
 
-      const left8 = r32.slice(0, 8);
-      const right8 = r32.slice(8, 16);
+        const newL32 = r32.slice(0, 8).map((m, i) => ({
+          id: `l32-${i}`,
+          home: toTeam(m.homeTeam, L32_INIT[i]?.home ?? { label: '—' }),
+          away: toTeam(m.awayTeam, L32_INIT[i]?.away ?? { label: '—' }),
+        }));
+        const newR32 = r32.slice(8, 16).map((m, i) => ({
+          id: `r32-${i}`,
+          home: toTeam(m.homeTeam, R32_INIT[i]?.home ?? { label: '—' }),
+          away: toTeam(m.awayTeam, R32_INIT[i]?.away ?? { label: '—' }),
+        }));
 
-      const newL32: BMatch[] = left8.map((m, i) => ({
-        id: `l32-${i}`,
-        home: toTeam(m.homeTeam, L32[i]?.home ?? { label: '—' }),
-        away: toTeam(m.awayTeam, L32[i]?.away ?? { label: '—' }),
-      }));
-      const newR32: BMatch[] = right8.map((m, i) => ({
-        id: `r32-${i}`,
-        home: toTeam(m.homeTeam, R32[i]?.home ?? { label: '—' }),
-        away: toTeam(m.awayTeam, R32[i]?.away ?? { label: '—' }),
-      }));
-
-      setBracket(prev => ({
-        ...prev,
-        left: [newL32, prev.left[1], prev.left[2], prev.left[3]] as HalfState,
-        right: [newR32, prev.right[1], prev.right[2], prev.right[3]] as HalfState,
-      }));
-      setTeamsLoaded(true);
-    }).catch(() => {});
+        const fresh = initBracket(newL32, newR32);
+        resetBase.current = fresh;
+        setBracket(fresh);
+        setTeamsLoaded(true);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, []);
 
-  function handleAdvance(side: 'left' | 'right', roundIdx: number, matchIdx: number, winner: 'home' | 'away') {
-    setBracket(prev => advanceTeam(prev, side, roundIdx, matchIdx, winner));
+  function handleAdvance(side: 'left' | 'right', ri: number, mi: number, w: 'home' | 'away') {
+    setBracket(prev => advanceTeam(prev, side, ri, mi, w));
   }
 
-  const finalCenter = getCenter(3, 0); // SF is round 3, match 0
-  const finalTop = finalCenter - H / 2;
+  function handleReset() {
+    setBracket(resetBase.current ?? initBracket());
+  }
 
-  const ROUND_NAMES = [t('knockout.r32'), t('knockout.r16'), t('knockout.qf'), t('knockout.sf')];
-  const ROUND_NAMES_L = ROUND_NAMES;
-  const ROUND_NAMES_R = ROUND_NAMES;
+  const finalCenter = getCenter(3, 0);
+  const finalTop    = finalCenter - H / 2;
+
+  const LABELS: RoundLabel[] = [
+    { text: t('knockout.r32'), color: '#6366F1' },
+    { text: t('knockout.r16'), color: '#8B5CF6' },
+    { text: t('knockout.qf'),  color: '#A855F7' },
+    { text: t('knockout.sf'),  color: '#C084FC' },
+  ];
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
 
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
@@ -352,30 +364,32 @@ export function Knockout() {
             <span style={{ color: '#F97316' }}>{t('knockout.titleHighlight')}</span>
           </h1>
           <p style={{ margin: '5px 0 0', fontSize: 13, color: '#6B7280' }}>
-            {t('knockout.subtitle')}
+            {teamsLoaded
+              ? 'Clique em uma seleção para avançá-la na chave'
+              : t('knockout.subtitle')}
           </p>
         </div>
         <button
-          onClick={() => setBracket(initBracket())}
+          onClick={handleReset}
           style={{
-            padding: '6px 14px', borderRadius: 8, fontSize: 12, fontWeight: 700,
-            background: '#F3F4F6', border: '1px solid #E5E7EB', color: '#6B7280',
-            cursor: 'pointer',
+            padding: '8px 16px', borderRadius: 8, fontSize: 12, fontWeight: 700,
+            background: '#F8FAFC', border: '1px solid #E2E8F0', color: '#64748B',
+            cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6,
           }}
         >
-          {t('knockout.resetBracket')}
+          ↺ {t('knockout.resetBracket')}
         </button>
       </div>
 
-      {/* Info banner — shown only while teams are still TBD */}
-      {!teamsLoaded && (
+      {/* TBD banner — shown only when teams couldn't be loaded */}
+      {!loading && !teamsLoaded && (
         <div style={{
           background: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: 10,
-          padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 10,
+          padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12,
         }}>
-          <span style={{ fontSize: 16 }}>⏳</span>
+          <span style={{ fontSize: 20 }}>⏳</span>
           <div>
-            <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: '#92400E' }}>
+            <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: '#92400E' }}>
               {t('knockout.tbdTitle')}
             </p>
             <p style={{ margin: 0, fontSize: 11, color: '#B45309' }}>
@@ -385,70 +399,80 @@ export function Knockout() {
         </div>
       )}
 
+      {/* Loading */}
+      {loading && (
+        <div style={{
+          background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: 12,
+          padding: 48, textAlign: 'center', color: '#94A3B8', fontSize: 14,
+        }}>
+          Carregando chave eliminatória…
+        </div>
+      )}
+
       {/* Bracket */}
-      <div style={{ overflowX: 'auto', overflowY: 'visible', paddingBottom: 16 }}>
-        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 0, minWidth: 'max-content', paddingTop: 4 }}>
+      {!loading && (
+        <div style={{
+          background: '#F8FAFC', borderRadius: 16,
+          border: '1px solid #E2E8F0',
+          padding: '28px 24px 28px',
+          overflowX: 'auto', overflowY: 'visible',
+        }}>
+          <div style={{
+            display: 'flex', alignItems: 'flex-start',
+            minWidth: 'max-content', paddingTop: 4,
+          }}>
 
-          {/* Left half */}
-          <HalfBracket
-            half={bracket.left}
-            side="left"
-            roundNames={ROUND_NAMES_L}
-            onAdvance={(ri, mi, w) => handleAdvance('left', ri, mi, w)}
-          />
+            {/* Left half */}
+            <HalfBracket
+              half={bracket.left} side="left" labels={LABELS}
+              onAdvance={(ri, mi, w) => handleAdvance('left', ri, mi, w)}
+            />
 
-          {/* SF → Final connectors + Final column */}
-          <div style={{ display: 'flex', alignItems: 'flex-start', flexShrink: 0 }}>
-            {/* Left SF connector to Final */}
-            <svg width={CONN_W} height={CONTAINER_H} style={{ flexShrink: 0, overflow: 'visible' }}>
-              <line x1={0} y1={getCenter(3, 0)} x2={CONN_W} y2={getCenter(3, 0)} stroke="#E5E7EB" strokeWidth={1.5} />
-            </svg>
+            {/* SF → Final → SF connectors + Final/3rd column */}
+            <div style={{ display: 'flex', alignItems: 'flex-start', flexShrink: 0 }}>
+              {/* Left SF connector */}
+              <svg width={CONN_W} height={CONTAINER_H} style={{ flexShrink: 0, overflow: 'visible' }}>
+                <line x1={0} y1={getCenter(3, 0)} x2={CONN_W} y2={getCenter(3, 0)} stroke="#CBD5E1" strokeWidth={1.5} />
+              </svg>
 
-            {/* Final + 3rd place column */}
-            <div style={{ display: 'flex', flexDirection: 'column', flexShrink: 0, width: COL_W + 24 }}>
-              <p style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.12em', color: '#F97316', textAlign: 'center', margin: '0 0 10px', textTransform: 'uppercase' }}>
-                {t('knockout.finalLabel')}
-              </p>
-              <div style={{ position: 'relative', height: CONTAINER_H }}>
-                {/* Final match */}
-                <div style={{ position: 'absolute', top: finalTop, left: 12 }}>
-                  <MatchSlot
-                    match={bracket.final}
-                    onAdvance={w => {
-                      const team = w === 'home' ? bracket.final.home : bracket.final.away;
-                      setBracket(prev => ({ ...prev, final: { ...prev.final, winner: w } }));
-                    }}
-                  />
-                </div>
+              <div style={{ display: 'flex', flexDirection: 'column', flexShrink: 0, width: COL_W + 24 }}>
+                {/* Final label */}
+                <RoundPill text={t('knockout.finalLabel')} color="#F97316" />
 
-                {/* 3rd place */}
-                <div style={{ position: 'absolute', top: finalTop + H + 32, left: 12 }}>
-                  <p style={{ fontSize: 9, fontWeight: 700, color: '#9CA3AF', textAlign: 'center', margin: '0 0 6px', letterSpacing: '0.1em' }}>
-                    {t('knockout.thirdPlace')}
-                  </p>
-                  <MatchSlot
-                    match={bracket.third}
-                    onAdvance={w => setBracket(prev => ({ ...prev, third: { ...prev.third, winner: w } }))}
-                  />
+                <div style={{ position: 'relative', height: CONTAINER_H }}>
+                  {/* Final */}
+                  <div style={{ position: 'absolute', top: finalTop, left: 12 }}>
+                    <MatchSlot
+                      match={bracket.final}
+                      onAdvance={w => setBracket(prev => ({ ...prev, final: { ...prev.final, winner: w } }))}
+                    />
+                  </div>
+
+                  {/* 3rd Place */}
+                  <div style={{ position: 'absolute', top: finalTop + H + 40, left: 12 }}>
+                    <RoundPill text={t('knockout.thirdPlace')} color="#64748B" />
+                    <MatchSlot
+                      match={bracket.third}
+                      onAdvance={w => setBracket(prev => ({ ...prev, third: { ...prev.third, winner: w } }))}
+                    />
+                  </div>
                 </div>
               </div>
+
+              {/* Right SF connector */}
+              <svg width={CONN_W} height={CONTAINER_H} style={{ flexShrink: 0, overflow: 'visible' }}>
+                <line x1={0} y1={getCenter(3, 0)} x2={CONN_W} y2={getCenter(3, 0)} stroke="#CBD5E1" strokeWidth={1.5} />
+              </svg>
             </div>
 
-            {/* Right SF connector from Final */}
-            <svg width={CONN_W} height={CONTAINER_H} style={{ flexShrink: 0, overflow: 'visible' }}>
-              <line x1={0} y1={getCenter(3, 0)} x2={CONN_W} y2={getCenter(3, 0)} stroke="#E5E7EB" strokeWidth={1.5} />
-            </svg>
+            {/* Right half */}
+            <HalfBracket
+              half={bracket.right} side="right" labels={LABELS}
+              onAdvance={(ri, mi, w) => handleAdvance('right', ri, mi, w)}
+            />
           </div>
-
-          {/* Right half */}
-          <HalfBracket
-            half={bracket.right}
-            side="right"
-            roundNames={ROUND_NAMES_R}
-            onAdvance={(ri, mi, w) => handleAdvance('right', ri, mi, w)}
-          />
         </div>
-      </div>
+      )}
     </div>
   );
 }
