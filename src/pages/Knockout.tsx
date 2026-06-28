@@ -7,6 +7,7 @@ interface MatchDto {
   awayTeam: { name: string; code: string; isoCode?: string | null };
   kickoffAt: string;
   stage: string;
+  apiFootballFixtureId?: number | null;
 }
 
 // ── Desktop layout constants ───────────────────────────────────
@@ -599,9 +600,14 @@ export function Knockout() {
   useEffect(() => {
     apiGet<MatchDto[]>('/matches')
       .then(all => {
+        // Sort by fixture ID (bracket order) when available, fallback to kickoffAt
         const byStage = (stage: string) => all
           .filter(m => m.stage === stage)
-          .sort((a, b) => new Date(a.kickoffAt).getTime() - new Date(b.kickoffAt).getTime());
+          .sort((a, b) => {
+            if (a.apiFootballFixtureId != null && b.apiFootballFixtureId != null)
+              return a.apiFootballFixtureId - b.apiFootballFixtureId;
+            return new Date(a.kickoffAt).getTime() - new Date(b.kickoffAt).getTime();
+          });
 
         const r32all = byStage('Rodada de 32');
         if (r32all.length < 8) return;
