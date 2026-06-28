@@ -10,10 +10,10 @@ interface MatchDto {
 }
 
 // ── Layout constants ──────────────────────────────────────────
-const H      = 84;   // match card height
-const UNIT   = 96;   // vertical slot (H + gap)
-const COL_W  = 180;  // card width
-const CONN_W = 32;   // SVG connector width
+const H      = 54;   // match card height
+const UNIT   = 62;   // vertical slot (H + gap)
+const COL_W  = 136;  // card width
+const CONN_W = 20;   // SVG connector width
 const CONTAINER_H = 8 * UNIT - (UNIT - H);
 
 function getCenter(round: number, idx: number) {
@@ -98,25 +98,6 @@ function advanceTeam(
   return { ...state, [side]: half, final: { ...state.final, [slot]: team } };
 }
 
-// ── Flag component ───────────────────────────────────────────
-function Flag({ isoCode, size = 28 }: { isoCode?: string; size?: number }) {
-  if (isoCode) {
-    return (
-      <img
-        src={`https://flagcdn.com/w40/${isoCode.toLowerCase()}.png`}
-        width={size} height={Math.round(size * 0.67)}
-        style={{ borderRadius: 3, objectFit: 'cover', flexShrink: 0, boxShadow: '0 1px 4px rgba(0,0,0,0.18)' }}
-      />
-    );
-  }
-  return (
-    <div style={{
-      width: size, height: Math.round(size * 0.67), borderRadius: 3, flexShrink: 0,
-      background: '#F1F5F9', border: '1px dashed #CBD5E1',
-    }} />
-  );
-}
-
 // ── Team row ─────────────────────────────────────────────────
 function TeamRow({
   team, isWinner, isLoser, canClick, onClick,
@@ -131,9 +112,10 @@ function TeamRow({
   return (
     <button
       onClick={canClick ? onClick : undefined}
+      title={hasReal ? `${team.name} (${team.label})` : team.label}
       style={{
-        display: 'flex', alignItems: 'center', gap: 9,
-        padding: '10px 12px 10px 9px', width: '100%',
+        display: 'flex', alignItems: 'center', gap: 6,
+        padding: '6px 8px 6px 6px', width: '100%',
         background: bg, border: 'none', borderLeft: leftBorder,
         cursor: canClick ? 'pointer' : 'default',
         textAlign: 'left', opacity: isLoser ? 0.35 : 1,
@@ -147,32 +129,34 @@ function TeamRow({
         (e.currentTarget as HTMLButtonElement).style.background = bg;
       }}
     >
-      <Flag isoCode={team.isoCode} size={26} />
-
-      <div style={{ flex: 1, overflow: 'hidden', minWidth: 0 }}>
+      {/* Flag */}
+      {team.isoCode ? (
+        <img
+          src={`https://flagcdn.com/w40/${team.isoCode.toLowerCase()}.png`}
+          width={22} height={15}
+          style={{ borderRadius: 2, objectFit: 'cover', flexShrink: 0, boxShadow: '0 1px 3px rgba(0,0,0,0.15)' }}
+        />
+      ) : (
         <div style={{
-          fontSize: hasReal ? 12 : 11,
-          fontWeight: hasReal ? 800 : 500,
-          color: isBlank ? '#CBD5E1' : hasReal ? '#0F172A' : '#64748B',
-          whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-          lineHeight: 1.2,
-        }}>
-          {hasReal ? team.name : team.label}
-        </div>
-        {hasReal && (
-          <div style={{ fontSize: 10, color: '#94A3B8', lineHeight: 1, marginTop: 2, fontWeight: 600 }}>
-            {team.label}
-          </div>
-        )}
-      </div>
+          width: 22, height: 15, borderRadius: 2, flexShrink: 0,
+          background: isBlank ? '#F1F5F9' : '#FEF3C7',
+          border: `1px dashed ${isBlank ? '#CBD5E1' : '#FCD34D'}`,
+        }} />
+      )}
 
+      {/* Name */}
+      <span style={{
+        flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+        fontSize: 11, fontWeight: hasReal ? 700 : 500,
+        color: isBlank ? '#CBD5E1' : hasReal ? '#0F172A' : '#64748B',
+        lineHeight: 1,
+      }}>
+        {hasReal ? team.name : team.label}
+      </span>
+
+      {/* Win indicator */}
       {isWinner && (
-        <div style={{
-          width: 18, height: 18, borderRadius: '50%', flexShrink: 0,
-          background: '#16A34A', display: 'flex', alignItems: 'center', justifyContent: 'center',
-        }}>
-          <span style={{ color: '#fff', fontSize: 10, fontWeight: 900, lineHeight: 1 }}>✓</span>
-        </div>
+        <span style={{ color: '#16A34A', fontSize: 11, fontWeight: 900, flexShrink: 0 }}>✓</span>
       )}
     </button>
   );
@@ -234,11 +218,11 @@ function Connector({ fromRound, count, dir }: { fromRound: number; count: number
 // ── Round pill label ─────────────────────────────────────────
 function RoundPill({ text, color }: { text: string; color: string }) {
   return (
-    <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 14 }}>
+    <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 10 }}>
       <span style={{
-        fontSize: 9, fontWeight: 800, letterSpacing: '0.1em',
+        fontSize: 8, fontWeight: 800, letterSpacing: '0.08em',
         color, textTransform: 'uppercase',
-        background: `${color}18`, padding: '4px 12px',
+        background: `${color}18`, padding: '3px 9px',
         borderRadius: 20, border: `1px solid ${color}35`,
         whiteSpace: 'nowrap',
       }}>
@@ -414,7 +398,7 @@ export function Knockout() {
         <div style={{
           background: '#F8FAFC', borderRadius: 16,
           border: '1px solid #E2E8F0',
-          padding: '28px 24px 28px',
+          padding: '20px 16px',
           overflowX: 'auto', overflowY: 'visible',
         }}>
           <div style={{
@@ -435,7 +419,7 @@ export function Knockout() {
                 <line x1={0} y1={getCenter(3, 0)} x2={CONN_W} y2={getCenter(3, 0)} stroke="#CBD5E1" strokeWidth={1.5} />
               </svg>
 
-              <div style={{ display: 'flex', flexDirection: 'column', flexShrink: 0, width: COL_W + 24 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', flexShrink: 0, width: COL_W + 16 }}>
                 {/* Final label */}
                 <RoundPill text={t('knockout.finalLabel')} color="#F97316" />
 
@@ -449,7 +433,7 @@ export function Knockout() {
                   </div>
 
                   {/* 3rd Place */}
-                  <div style={{ position: 'absolute', top: finalTop + H + 40, left: 12 }}>
+                  <div style={{ position: 'absolute', top: finalTop + H + 28, left: 12 }}>
                     <RoundPill text={t('knockout.thirdPlace')} color="#64748B" />
                     <MatchSlot
                       match={bracket.third}
